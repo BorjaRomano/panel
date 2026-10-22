@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Panel de casa</title>
+<style id="base">
+/* Los colores var(--x) los rellena applyTheme(); en navegadores sin variables CSS (Android 5) los sustituye en el texto */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:Roboto,"Segoe UI",Helvetica,Arial,sans-serif;font-size:16px;-webkit-tap-highlight-color:transparent;display:-webkit-box;display:-webkit-flex;display:flex;overflow:hidden}
+button{font:inherit;color:inherit}
+nav{width:104px;background:var(--card);border-right:1px solid var(--line);display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;-webkit-align-items:stretch;align-items:stretch;padding:8px 0;overflow-y:auto}
+nav .nc{text-align:center;font-size:22px;font-weight:700;padding:6px 0 10px;border-bottom:1px solid var(--line);margin-bottom:6px}
+nav button{background:none;border:0;padding:10px 4px;display:block;width:100%;text-align:center;font-size:13px;color:var(--mute);cursor:pointer;border-left:4px solid transparent}
+nav button .i{display:block;font-size:26px;line-height:32px}
+nav button.on{color:var(--acc);border-left-color:var(--acc);background:var(--acc2);font-weight:700}
+main{-webkit-flex:1;flex:1;overflow-y:auto;padding:20px 24px;-webkit-overflow-scrolling:touch}
+h2{margin:0 0 14px;font-size:24px}
+h3{margin:0 0 10px;font-size:17px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.row{display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap;margin:0 -8px}
+.row>*{margin-left:8px;margin-right:8px}
+.f1{-webkit-flex:1;flex:1;min-width:260px}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;display:inline-block;text-decoration:none;font-size:15px}
+body.dark .btn{color:#0d1f16}
+.btn.sec{background:var(--acc2);color:var(--acc)}
+.btn.sm{padding:6px 10px;font-size:13px}
+.mute{color:var(--mute)}
+.small{font-size:13px}
+.top{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:space-between;justify-content:space-between;-webkit-flex-wrap:wrap;flex-wrap:wrap;margin-bottom:12px}
+.top>*{margin-bottom:6px}
+/* inicio */
+.clock{font-size:120px;font-weight:300;line-height:1;letter-spacing:-.02em}
+.date{font-size:26px;margin:6px 0 20px;color:var(--mute)}
+.wxnow{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center}
+.wxnow .e{font-size:64px;margin-right:16px}
+.wxnow .t{font-size:48px;font-weight:300}
+.wxdays{display:-webkit-flex;display:flex;margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.wxdays div{-webkit-flex:1;flex:1;text-align:center;font-size:14px}
+.wxdays .e{font-size:28px;display:block;margin:2px 0}
+.meal{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.meal:last-child{border-bottom:0}
+.meal .k{width:96px;color:var(--mute);font-size:14px}
+.meal .n{-webkit-flex:1;flex:1;font-size:18px}
+.tip{background:var(--acc2);border-color:transparent}
+.big{font-size:34px;font-weight:700}
+/* menú */
+table.wk{width:100%;border-collapse:separate;border-spacing:0 6px}
+table.wk th{text-align:left;font-size:13px;color:var(--mute);font-weight:600;padding:0 8px}
+table.wk td{background:var(--card);padding:8px;vertical-align:top;font-size:14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+table.wk td:first-child{border-left:1px solid var(--line);border-radius:10px 0 0 10px;font-weight:700;width:90px}
+table.wk td:last-child{border-right:1px solid var(--line);border-radius:0 10px 10px 0;width:80px;text-align:right;color:var(--mute)}
+table.wk tr.today td{background:var(--acc2);border-color:var(--acc)}
+.cell{display:-webkit-flex;display:flex;-webkit-align-items:flex-start;align-items:flex-start}
+.cell .n{-webkit-flex:1;flex:1;cursor:pointer;padding-right:4px}
+.sw{background:none;border:1px solid var(--line);border-radius:8px;width:32px;height:32px;cursor:pointer;color:var(--mute);font-size:16px;-webkit-flex:none;flex:none}
+.chips span{display:inline-block;padding:6px 12px;border-radius:20px;margin:0 6px 6px 0;font-size:14px;background:var(--acc2);color:var(--acc)}
+.chips span.bad{background:var(--warn2);color:var(--warn)}
+ul.tips{margin:6px 0 0;padding-left:20px}
+ul.tips li{margin-bottom:6px}
+/* recetas */
+.rgrid{display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap;margin:0 -6px}
+.rc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:6px;width:calc(33.33% - 12px);min-width:200px;cursor:pointer;-webkit-flex-grow:1;flex-grow:1}
+.rc b{display:block;margin-bottom:4px}
+.seg{display:inline-block;margin-bottom:12px}
+.seg button{background:var(--card);border:1px solid var(--line);padding:8px 14px;cursor:pointer;margin-right:-1px}
+.seg button:first-child{border-radius:10px 0 0 10px}
+.seg button:last-child{border-radius:0 10px 10px 0}
+.seg button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+input[type=text],input[type=number],input[type=email],select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+textarea{min-height:90px}
+/* compra */
+.sec-h{font-weight:700;margin:14px 0 4px;color:var(--acc)}
+.it{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.it .bx{width:26px;height:26px;border:2px solid var(--mute);border-radius:7px;margin-right:12px;text-align:center;line-height:22px;font-weight:700;-webkit-flex:none;flex:none}
+.it.done .bx{background:var(--acc);border-color:var(--acc);color:#fff}
+.it.done .nm{text-decoration:line-through;color:var(--mute)}
+.it .nm{-webkit-flex:1;flex:1;font-size:17px}
+.it .q{color:var(--mute);margin-left:8px}
+.it .x{background:none;border:0;color:var(--mute);font-size:20px;padding:0 8px;cursor:pointer}
+.cols2{-webkit-column-count:2;column-count:2;-webkit-column-gap:32px;column-gap:32px}
+.cols2 .grp{-webkit-column-break-inside:avoid;break-inside:avoid;display:inline-block;width:100%}
+/* música */
+.pl{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.pl .n{-webkit-flex:1;flex:1;font-size:18px}
+.pl .btn{margin-left:8px}
+iframe{border:0;width:100%;border-radius:12px;background:var(--card)}
+/* ajustes */
+label.l{display:block;font-weight:600;margin:14px 0 6px}
+.chk{display:inline-block;margin:0 14px 8px 0;font-size:15px}
+.chk input{width:20px;height:20px;vertical-align:middle;margin-right:4px}
+/* modal */
+#ov{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,.45);display:none;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;z-index:9;padding:20px}
+#ov.on{display:-webkit-flex;display:flex}
+#md{background:var(--card);border-radius:16px;max-width:900px;width:100%;max-height:100%;overflow-y:auto;padding:22px 24px}
+#md ol{padding-left:22px}
+#md ol li{margin-bottom:8px;line-height:1.4}
+#md ul{padding-left:20px;margin-top:0}
+#md ul li{margin-bottom:4px}
+#toast{position:fixed;bottom:20px;left:50%;-webkit-transform:translateX(-50%);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;display:none;z-index:10}
+@media (max-width:760px){
+  body{-webkit-flex-direction:column-reverse;flex-direction:column-reverse}
+  nav{width:auto;-webkit-flex-direction:row;flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:0;overflow-x:auto}
+  nav .nc{display:none}
+  nav button{border-left:0;border-top:3px solid transparent;font-size:11px;padding:6px 2px}
+  nav button.on{border-top-color:var(--acc)}
+  main{padding:16px}
+  .clock{font-size:80px}
+  .cols2{-webkit-column-count:1;column-count:1}
+  .rc{width:100%}
+}
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+<main id="main"></main>
+<div id="ov"><div id="md"></div></div>
+<div id="toast"></div>
+<script>
+(function () {
+'use strict';
+
+/* ---------- Recetas ----------
+   i: [ingrediente, cantidad por persona, unidad, sección]; cantidad 0 = al gusto
+   Secciones: V verdura/fruta, C carne, P pescado, L lácteos/huevos, D despensa, N panadería, F congelados, B básicos */
+var AOVE = 'Aceite de oliva virgen extra';
+var R = [
+ {id:'d1',t:'d',n:'Tostada integral con tomate y café con leche',k:350,m:5,g:['gluten','lactosa'],i:[['Pan integral',60,'g','N'],['Tomate',1,'ud','V'],['Leche semidesnatada',200,'ml','L'],[AOVE,10,'ml','B'],['Café',0,'ud','B']],s:['Tuesta el pan.','Ralla el tomate y extiéndelo sobre el pan con un chorrito de aceite.','Acompaña con un café con leche.']},
+ {id:'d2',t:'d',n:'Yogur natural con plátano y avena',k:320,m:5,g:['lactosa','gluten'],i:[['Yogur natural',2,'ud','L'],['Plátano',1,'ud','V'],['Copos de avena',30,'g','D'],['Canela',0,'ud','B']],s:['Pon los yogures en un bol.','Añade el plátano en rodajas y los copos de avena.','Espolvorea canela al gusto.']},
+ {id:'d3',t:'d',n:'Tostada de aguacate y huevo',k:400,m:10,g:['gluten','huevo'],i:[['Pan integral',60,'g','N'],['Aguacate',0.5,'ud','V'],['Huevos',1,'ud','L'],[AOVE,5,'ml','B'],['Sal y pimienta',0,'ud','B']],s:['Cuece el huevo 9 minutos o hazlo a la plancha.','Machaca el aguacate con sal y pimienta y extiéndelo sobre el pan tostado.','Coloca el huevo encima.']},
+ {id:'d4',t:'d',n:'Porridge de avena con manzana y canela',k:360,m:10,g:['gluten','lactosa'],i:[['Copos de avena',40,'g','D'],['Leche semidesnatada',250,'ml','L'],['Manzana',1,'ud','V'],['Canela',0,'ud','B']],s:['Calienta la leche con la avena a fuego medio 5 minutos, removiendo.','Añade la manzana troceada y la canela.','Deja reposar un minuto y sirve.']},
+ {id:'d5',t:'d',n:'Batido de plátano y frutos rojos',k:300,m:5,g:['lactosa'],i:[['Leche semidesnatada',200,'ml','L'],['Plátano',1,'ud','V'],['Frutos rojos congelados',80,'g','F']],s:['Tritura todo en la batidora hasta que quede cremoso.','Si lo quieres más espeso, añade medio yogur.']},
+ {id:'d6',t:'d',n:'Tortitas de arroz con queso fresco y pavo',k:280,m:5,g:['lactosa','carne'],i:[['Tortitas de arroz',3,'ud','D'],['Queso fresco',60,'g','L'],['Pechuga de pavo en lonchas',50,'g','C'],['Tomate',0.5,'ud','V']],s:['Unta las tortitas con el queso fresco.','Añade el pavo y unas rodajas de tomate.']},
+ {id:'d7',t:'d',n:'Fruta de temporada con nueces',k:250,m:3,g:['frutos_secos'],i:[['Fruta de temporada',2,'ud','V'],['Nueces peladas',25,'g','D']],s:['Lava y trocea la fruta.','Acompaña con un puñado de nueces y una infusión.']},
+ {id:'d8',t:'d',n:'Huevos revueltos con tomate y fruta',k:330,m:10,g:['huevo'],i:[['Huevos',2,'ud','L'],['Tomate',1,'ud','V'],['Fruta de temporada',1,'ud','V'],[AOVE,5,'ml','B']],s:['Saltea el tomate picado un par de minutos.','Añade los huevos batidos y remueve hasta que cuajen.','Termina con una pieza de fruta.']},
+
+ {id:'c1',t:'c',n:'Lentejas estofadas con verduras',k:450,m:45,g:['legumbre'],i:[['Lentejas pardinas',80,'g','D'],['Zanahoria',1,'ud','V'],['Patata',1,'ud','V'],['Cebolla',0.5,'ud','V'],['Pimiento verde',0.5,'ud','V'],['Ajo',1,'diente','V'],['Pimentón dulce',0,'ud','B'],['Laurel',0,'ud','B'],[AOVE,10,'ml','B']],s:['Sofríe la cebolla, el ajo y el pimiento picados en el aceite.','Añade la zanahoria en rodajas, el pimentón y las lentejas lavadas.','Cubre con agua, pon el laurel y cuece 25 minutos.','Incorpora la patata troceada y cuece 15 minutos más. Ajusta de sal.']},
+ {id:'c2',t:'c',n:'Garbanzos con espinacas',k:420,m:20,g:['legumbre'],i:[['Garbanzos cocidos',200,'g','D'],['Espinacas frescas',100,'g','V'],['Ajo',2,'diente','V'],['Comino',0,'ud','B'],['Pimentón dulce',0,'ud','B'],[AOVE,15,'ml','B']],s:['Dora el ajo laminado en el aceite.','Añade las espinacas y saltea hasta que se ablanden.','Incorpora el pimentón, el comino y los garbanzos escurridos.','Añade un poco de agua y cuece 5 minutos.']},
+ {id:'c3',t:'c',n:'Fabes con almejas',k:520,m:150,g:['legumbre','pescado'],i:[['Fabes',80,'g','D'],['Almejas',100,'g','P'],['Cebolla',0.5,'ud','V'],['Ajo',1,'diente','V'],['Perejil',0,'ud','V'],['Azafrán',0,'ud','B'],[AOVE,10,'ml','B']],s:['Pon las fabes en remojo la noche anterior.','Cuécelas a fuego suave con la cebolla y el ajo unas 2 horas, «asustándolas» con un chorrito de agua fría de vez en cuando.','Abre las almejas en una sartén y añádelas con su jugo y el azafrán.','Cuece 10 minutos más y espolvorea perejil.']},
+ {id:'c4',t:'c',n:'Pollo al horno con patatas y verduras',k:550,m:60,g:['carne'],i:[['Muslos de pollo',250,'g','C'],['Patata',1,'ud','V'],['Cebolla',0.5,'ud','V'],['Pimiento rojo',0.5,'ud','V'],['Limón',0.5,'ud','V'],['Ajo',1,'diente','V'],['Romero',0,'ud','B'],[AOVE,15,'ml','B']],s:['Precalienta el horno a 200 °C.','Pon en una bandeja la patata en rodajas y la cebolla y el pimiento en tiras.','Coloca encima el pollo salpimentado con ajo, romero, limón y aceite.','Hornea 50 minutos, dando la vuelta al pollo a mitad.']},
+ {id:'c5',t:'c',n:'Merluza en salsa verde con patatas',k:420,m:30,g:['pescado','gluten'],i:[['Merluza',180,'g','P'],['Patata',1,'ud','V'],['Ajo',2,'diente','V'],['Perejil',0,'ud','V'],['Caldo de pescado',150,'ml','D'],['Harina',0,'ud','B'],[AOVE,15,'ml','B']],s:['Cuece la patata en rodajas 15 minutos.','Dora el ajo picado, añade una cucharadita de harina y luego el caldo poco a poco.','Incorpora la merluza y cuece 5–6 minutos moviendo la cazuela.','Añade perejil picado y sirve con la patata.']},
+ {id:'c6',t:'c',n:'Arroz con pollo y verduras',k:520,m:40,g:['carne'],i:[['Arroz',80,'g','D'],['Pechuga de pollo',120,'g','C'],['Judías verdes',80,'g','V'],['Pimiento rojo',0.5,'ud','V'],['Tomate triturado',100,'g','D'],['Ajo',1,'diente','V'],['Azafrán',0,'ud','B'],[AOVE,10,'ml','B']],s:['Dora el pollo troceado y resérvalo.','Sofríe el ajo, el pimiento y las judías; añade el tomate.','Incorpora el arroz, el pollo y el doble de agua que de arroz.','Cuece 18 minutos y deja reposar 5.']},
+ {id:'c7',t:'c',n:'Pasta integral con atún y tomate',k:520,m:20,g:['gluten','pescado'],i:[['Pasta integral',80,'g','D'],['Atún en lata',1,'lata','D'],['Tomate triturado',150,'g','D'],['Cebolla',0.5,'ud','V'],['Orégano',0,'ud','B'],[AOVE,10,'ml','B']],s:['Cuece la pasta según el paquete.','Pocha la cebolla, añade el tomate y cocina 10 minutos.','Incorpora el atún escurrido y el orégano.','Mezcla con la pasta.']},
+ {id:'c8',t:'c',n:'Salmón a la plancha con quinoa y brócoli',k:560,m:25,g:['pescado'],i:[['Salmón',150,'g','P'],['Quinoa',60,'g','D'],['Brócoli',150,'g','V'],['Limón',0.25,'ud','V'],[AOVE,10,'ml','B']],s:['Lava la quinoa y cuécela 15 minutos.','Cuece el brócoli al vapor 6–7 minutos.','Haz el salmón a la plancha 3–4 minutos por lado.','Sirve con un chorrito de limón.']},
+ {id:'c9',t:'c',n:'Ternera guisada con verduras',k:560,m:90,g:['carne','carne_roja'],i:[['Ternera para guisar',150,'g','C'],['Zanahoria',1,'ud','V'],['Patata',1,'ud','V'],['Cebolla',0.5,'ud','V'],['Guisantes congelados',50,'g','F'],['Tomate triturado',50,'g','D'],['Laurel',0,'ud','B'],[AOVE,10,'ml','B']],s:['Dora la carne troceada y resérvala.','Sofríe la cebolla y la zanahoria y añade el tomate.','Vuelve a poner la carne, cubre con agua, añade el laurel y cuece 60 minutos a fuego suave.','Añade la patata y los guisantes y cuece 20 minutos más.']},
+ {id:'c10',t:'c',n:'Potaje de alubias con acelgas',k:430,m:30,g:['legumbre'],i:[['Alubias blancas cocidas',200,'g','D'],['Acelgas',100,'g','V'],['Zanahoria',1,'ud','V'],['Cebolla',0.5,'ud','V'],['Ajo',1,'diente','V'],['Pimentón dulce',0,'ud','B'],[AOVE,10,'ml','B']],s:['Sofríe la cebolla, el ajo y la zanahoria picados.','Añade el pimentón, las acelgas troceadas y agua o caldo.','Cuece 15 minutos, incorpora las alubias y cuece 5 más.']},
+ {id:'c11',t:'c',n:'Paella de marisco',k:520,m:45,g:['pescado'],i:[['Arroz',80,'g','D'],['Gambas peladas',100,'g','F'],['Calamar',80,'g','P'],['Pimiento rojo',0.5,'ud','V'],['Tomate triturado',60,'g','D'],['Caldo de pescado',250,'ml','D'],['Azafrán',0,'ud','B'],[AOVE,15,'ml','B']],s:['Saltea las gambas y resérvalas.','Sofríe el calamar y el pimiento y añade el tomate.','Incorpora el arroz, el caldo caliente y el azafrán.','Cuece 18 minutos sin remover, coloca las gambas y deja reposar 5.']},
+ {id:'c12',t:'c',n:'Pavo a la plancha con pisto',k:420,m:35,g:['carne'],i:[['Pechuga de pavo',150,'g','C'],['Calabacín',0.5,'ud','V'],['Berenjena',0.5,'ud','V'],['Pimiento rojo',0.5,'ud','V'],['Cebolla',0.5,'ud','V'],['Tomate triturado',100,'g','D'],[AOVE,15,'ml','B']],s:['Pocha la cebolla y el pimiento 10 minutos.','Añade la berenjena y el calabacín en dados y cocina 10 minutos.','Incorpora el tomate y cocina 10 minutos más.','Haz el pavo a la plancha y sírvelo con el pisto.']},
+ {id:'c13',t:'c',n:'Lubina al horno con patatas panaderas',k:480,m:45,g:['pescado'],i:[['Lubina (ración)',1,'ud','P'],['Patata',1,'ud','V'],['Cebolla',0.5,'ud','V'],['Ajo',1,'diente','V'],['Limón',0.25,'ud','V'],[AOVE,15,'ml','B']],s:['Hornea la patata y la cebolla en láminas a 190 °C durante 25 minutos.','Coloca la lubina encima con ajo, limón y aceite.','Hornea 15–20 minutos más.']},
+ {id:'c14',t:'c',n:'Albóndigas en salsa de tomate con arroz',k:600,m:45,g:['carne','carne_roja','huevo','gluten'],i:[['Carne picada mixta',130,'g','C'],['Huevos',0.25,'ud','L'],['Pan rallado',15,'g','D'],['Tomate triturado',150,'g','D'],['Cebolla',0.5,'ud','V'],['Arroz',60,'g','D'],[AOVE,10,'ml','B']],s:['Mezcla la carne con el huevo, el pan rallado y sal, y forma bolitas.','Dóralas y resérvalas.','Pocha la cebolla, añade el tomate y las albóndigas y cuece 20 minutos.','Sirve con arroz blanco.']},
+ {id:'c15',t:'c',n:'Curry de garbanzos con arroz',k:560,m:25,g:['legumbre'],i:[['Garbanzos cocidos',200,'g','D'],['Leche de coco',100,'ml','D'],['Espinacas frescas',80,'g','V'],['Cebolla',0.5,'ud','V'],['Tomate triturado',80,'g','D'],['Arroz',60,'g','D'],['Curry en polvo',0,'ud','B'],[AOVE,10,'ml','B']],s:['Pocha la cebolla y añade el curry y el tomate.','Incorpora la leche de coco y los garbanzos y cuece 10 minutos.','Añade las espinacas al final.','Sirve con arroz.']},
+ {id:'c16',t:'c',n:'Lasaña de verduras',k:520,m:50,g:['gluten','lactosa'],i:[['Placas de lasaña',4,'ud','D'],['Calabacín',0.5,'ud','V'],['Berenjena',0.5,'ud','V'],['Cebolla',0.5,'ud','V'],['Tomate triturado',100,'g','D'],['Leche semidesnatada',150,'ml','L'],['Queso rallado',30,'g','L'],['Harina',0,'ud','B'],[AOVE,15,'ml','B']],s:['Hidrata las placas según el paquete.','Sofríe las verduras picadas y añade el tomate.','Haz una bechamel ligera con aceite, una cucharada de harina y la leche.','Monta capas de placas, verduras y bechamel, cubre con queso y hornea 20 minutos a 200 °C.']},
+
+ {id:'n1',t:'n',n:'Tortilla de patata con ensalada',k:450,m:30,g:['huevo'],i:[['Huevos',2,'ud','L'],['Patata',1,'ud','V'],['Cebolla',0.5,'ud','V'],['Lechuga',0.25,'ud','V'],['Tomate',1,'ud','V'],[AOVE,20,'ml','B']],s:['Pocha la patata y la cebolla en láminas a fuego suave 20 minutos.','Escúrrelas y mézclalas con el huevo batido.','Cuaja la tortilla por ambos lados.','Sirve con lechuga y tomate.']},
+ {id:'n2',t:'n',n:'Crema de calabacín con huevo cocido',k:300,m:25,g:['huevo'],i:[['Calabacín',1,'ud','V'],['Puerro',0.5,'ud','V'],['Patata',0.5,'ud','V'],['Huevos',1,'ud','L'],[AOVE,10,'ml','B']],s:['Rehoga el puerro y añade el calabacín y la patata troceados.','Cubre con agua y cuece 15 minutos.','Tritura y ajusta de sal.','Sirve con huevo cocido picado por encima.']},
+ {id:'n3',t:'n',n:'Bonito a la plancha con ensalada',k:380,m:15,g:['pescado'],i:[['Bonito o atún fresco',150,'g','P'],['Lechuga',0.25,'ud','V'],['Tomate',1,'ud','V'],['Cebolla',0.25,'ud','V'],[AOVE,15,'ml','B']],s:['Haz el bonito a la plancha 2 minutos por lado.','Prepara una ensalada con lechuga, tomate y cebolla.','Aliña con aceite y sal.']},
+ {id:'n4',t:'n',n:'Revuelto de champiñones y gambas',k:350,m:15,g:['huevo','pescado'],i:[['Huevos',2,'ud','L'],['Champiñones',150,'g','V'],['Gambas peladas',80,'g','F'],['Ajo',1,'diente','V'],[AOVE,10,'ml','B']],s:['Saltea el ajo y los champiñones laminados.','Añade las gambas 2 minutos.','Incorpora los huevos batidos y retira cuando estén cremosos.']},
+ {id:'n5',t:'n',n:'Ensalada de quinoa y garbanzos',k:420,m:20,g:['legumbre'],i:[['Quinoa',50,'g','D'],['Garbanzos cocidos',100,'g','D'],['Pepino',0.5,'ud','V'],['Tomate',1,'ud','V'],['Pimiento rojo',0.25,'ud','V'],['Limón',0.25,'ud','V'],[AOVE,15,'ml','B']],s:['Cuece la quinoa 15 minutos y enfríala.','Trocea las verduras.','Mezcla todo con los garbanzos y aliña con limón y aceite.']},
+ {id:'n6',t:'n',n:'Pollo a la plancha con verduras salteadas',k:380,m:20,g:['carne'],i:[['Pechuga de pollo',150,'g','C'],['Calabacín',0.5,'ud','V'],['Champiñones',100,'g','V'],['Pimiento rojo',0.5,'ud','V'],[AOVE,10,'ml','B']],s:['Saltea las verduras troceadas a fuego fuerte 8 minutos.','Haz el pollo a la plancha salpimentado.','Sirve todo junto.']},
+ {id:'n7',t:'n',n:'Sopa de verduras con fideos',k:280,m:25,g:['gluten'],i:[['Fideos',30,'g','D'],['Zanahoria',1,'ud','V'],['Puerro',0.5,'ud','V'],['Apio (rama)',1,'ud','V'],['Caldo de verduras',400,'ml','D']],s:['Corta las verduras pequeñas y rehógalas 5 minutos.','Añade el caldo y cuece 15 minutos.','Incorpora los fideos y cuece lo que indique el paquete.']},
+ {id:'n8',t:'n',n:'Merluza al vapor con judías verdes',k:320,m:20,g:['pescado'],i:[['Merluza',150,'g','P'],['Judías verdes',150,'g','V'],['Patata',0.5,'ud','V'],['Limón',0.25,'ud','V'],[AOVE,10,'ml','B']],s:['Cuece la patata y las judías troceadas 12 minutos.','Haz la merluza al vapor, o tapada en el microondas 4–5 minutos.','Aliña con aceite y limón.']},
+ {id:'n9',t:'n',n:'Pizza casera integral de verduras',k:520,m:25,g:['gluten','lactosa'],i:[['Masa de pizza integral',0.5,'ud','D'],['Tomate triturado',60,'g','D'],['Mozzarella',50,'g','L'],['Pimiento rojo',0.25,'ud','V'],['Champiñones',50,'g','V'],['Orégano',0,'ud','B']],s:['Precalienta el horno a 220 °C.','Extiende el tomate sobre la masa y añade las verduras y la mozzarella.','Hornea 12–15 minutos.']},
+ {id:'n10',t:'n',n:'Hamburguesas de lentejas con ensalada',k:400,m:25,g:['legumbre','gluten'],i:[['Lentejas cocidas',150,'g','D'],['Zanahoria',0.5,'ud','V'],['Cebolla',0.25,'ud','V'],['Pan rallado',15,'g','D'],['Lechuga',0.25,'ud','V'],['Tomate',1,'ud','V'],['Comino',0,'ud','B'],[AOVE,10,'ml','B']],s:['Tritura las lentejas escurridas con la zanahoria rallada, la cebolla y el comino.','Añade pan rallado hasta que se puedan formar hamburguesas.','Dóralas 3 minutos por lado.','Sirve con ensalada.']},
+ {id:'n11',t:'n',n:'Salmón en papillote con verduras',k:420,m:25,g:['pescado'],i:[['Salmón',130,'g','P'],['Calabacín',0.5,'ud','V'],['Zanahoria',0.5,'ud','V'],['Puerro',0.5,'ud','V'],['Limón',0.25,'ud','V'],[AOVE,5,'ml','B']],s:['Precalienta el horno a 200 °C.','Pon las verduras en tiras finas sobre papel de horno y el salmón encima.','Añade limón y aceite, cierra el paquete y hornea 15 minutos.']},
+ {id:'n12',t:'n',n:'Ensalada César ligera con pollo',k:420,m:20,g:['carne','lactosa','gluten'],i:[['Lechuga romana',0.5,'ud','V'],['Pechuga de pollo',120,'g','C'],['Queso parmesano',15,'g','L'],['Pan integral',30,'g','N'],['Yogur natural',1,'ud','L'],['Limón',0.25,'ud','V']],s:['Haz el pollo a la plancha y córtalo en tiras.','Tuesta el pan en dados.','Mezcla el yogur con limón, sal y parmesano rallado para la salsa.','Monta la lechuga con el pollo, el pan y la salsa.']},
+ {id:'n13',t:'n',n:'Berenjena rellena de pavo',k:400,m:45,g:['carne','lactosa'],i:[['Berenjena',1,'ud','V'],['Carne picada de pavo',100,'g','C'],['Tomate triturado',80,'g','D'],['Cebolla',0.25,'ud','V'],['Queso rallado',20,'g','L'],[AOVE,10,'ml','B']],s:['Asa la berenjena partida por la mitad 20 minutos a 200 °C y vacía la pulpa.','Sofríe la cebolla, la carne, la pulpa y el tomate.','Rellena las berenjenas, cubre con queso y gratina 10 minutos.']},
+ {id:'n14',t:'n',n:'Tortilla francesa con espárragos y tomate',k:300,m:10,g:['huevo'],i:[['Huevos',2,'ud','L'],['Espárragos verdes',100,'g','V'],['Tomate',1,'ud','V'],[AOVE,10,'ml','B']],s:['Haz los espárragos a la plancha.','Bate los huevos y cuaja la tortilla.','Sirve con el tomate en rodajas.']},
+ {id:'n15',t:'n',n:'Crema de calabaza con queso fresco',k:330,m:30,g:['lactosa','gluten'],i:[['Calabaza',250,'g','V'],['Cebolla',0.5,'ud','V'],['Zanahoria',0.5,'ud','V'],['Queso fresco',50,'g','L'],['Pan integral',20,'g','N'],[AOVE,10,'ml','B']],s:['Rehoga la cebolla y añade la calabaza y la zanahoria troceadas.','Cubre con agua, cuece 20 minutos y tritura.','Sirve con dados de queso fresco y picatostes.']}
+];
+var BYID = {};
+R.forEach(function (r) { BYID[r.id] = r; });
+
+var SECS = {V:'Fruta y verdura',C:'Carne',P:'Pescado y marisco',L:'Lácteos y huevos',D:'Despensa',N:'Panadería',F:'Congelados',B:'Básicos (revisa que te queden)'};
+var SEC_ORDER = ['V','C','P','L','N','D','F','B'];
+var SLOTS = [['d','Desayuno'],['c','Comida'],['n','Cena']];
+var TAGS = [['carne','Carne'],['pescado','Pescado y marisco'],['huevo','Huevo'],['lactosa','Lácteos'],['gluten','Gluten'],['frutos_secos','Frutos secos']];
+var DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+var CONSEJOS = [
+ 'Para media mañana y merienda: fruta, un yogur natural o un puñado de frutos secos.',
+ 'Llena medio plato de verdura en comidas y cenas.',
+ 'Cocina el doble de legumbres y congela raciones para otros días.',
+ 'El domingo es buen día para lavar y cortar verdura para varios días.',
+ 'Bebe agua a lo largo del día; a veces la sed se confunde con hambre.',
+ 'Elige pan integral y aceite de oliva virgen extra.',
+ 'Cena al menos dos horas antes de acostarte.',
+ 'La fruta entera sacia más que el zumo.'
+];
+
+/* ---------- Estado ---------- */
+var KEY = 'panelEdison.v1';
+var DEF = {city:{name:'Oviedo',lat:43.3614,lon:-5.8494},people:2,kcal:2000,diet:'omni',excl:[],gcal:'',theme:'auto',
+  playlists:[{n:'Today\'s Top Hits',u:'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'}]};
+var S, view = 'home', recFilter = 'all', recQuery = '', wx = null;
+
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function load() {
+  try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  if (!S || !S.cfg) S = {cfg:clone(DEF),plan:null,checked:{},extra:[]};
+  for (var k in DEF) if (!(k in S.cfg)) S.cfg[k] = clone(DEF[k]);
+  if (!S.checked) S.checked = {};
+  if (!S.extra) S.extra = [];
+  if (S.wx) wx = S.wx;
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- Utilidades ---------- */
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function mondayOf(d) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; }
+function has(arr, v) { return arr.indexOf(v) !== -1; }
+function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function factor() { return Math.min(1.4, Math.max(0.7, S.cfg.kcal / 2000)); }
+function toast(msg) { var t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(function () { t.style.display = 'none'; }, 2500); }
+function getJSON(url, ok, fail) {
+  try {
+    var x = new XMLHttpRequest();
+    x.open('GET', url, true);
+    x.timeout = 15000;
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      if (x.status >= 200 && x.status < 300) { try { ok(JSON.parse(x.responseText)); } catch (e) { if (fail) fail(); } }
+      else if (fail) fail();
+    };
+    x.send();
+  } catch (e) { if (fail) fail(); }
+}
+// Android 5 no reconoce los certificados de Let's Encrypt: si https falla, se reintenta por http y se recuerda
+var plainHttp = false;
+function getOpenMeteo(url, ok, fail) {
+  if (plainHttp) { getJSON(url.replace(/^https:/, 'http:'), ok, fail); return; }
+  getJSON(url, ok, function () {
+    getJSON(url.replace(/^https:/, 'http:'), function (j) { plainHttp = true; ok(j); }, fail);
+  });
+}
+function fmtQty(q, u) {
+  if (!q) return '';
+  if (u === 'g' || u === 'ml') {
+    if (q >= 1000) return String(Math.round(q / 100) / 10).replace('.', ',') + (u === 'g' ? ' kg' : ' l');
+    return Math.max(5, Math.round(q / 5) * 5) + ' ' + u;
+  }
+  var h = Math.max(0.5, Math.round(q * 2) / 2), w = Math.floor(h), f = h - w;
+  var s = (w ? w : '') + (f ? '½' : '');
+  if (u === 'ud') return s;
+  return s + ' ' + u + (h > 1 ? 's' : '');
+}
+
+/* ---------- Dieta ---------- */
+function allowed(r) {
+  if (S.cfg.diet === 'veg' && (has(r.g, 'carne') || has(r.g, 'pescado'))) return false;
+  if (S.cfg.diet === 'pesc' && has(r.g, 'carne')) return false;
+  for (var i = 0; i < S.cfg.excl.length; i++) if (has(r.g, S.cfg.excl[i])) return false;
+  return true;
+}
+function pool(t) { return R.filter(function (r) { return r.t === t && allowed(r); }); }
+function countTags(days) {
+  var c = {legumbre:0,pescado:0,carne:0,carne_roja:0,huevo:0};
+  days.forEach(function (d) {
+    ['c', 'n'].forEach(function (s) {
+      var r = BYID[d[s]]; if (!r) return;
+      for (var k in c) if (has(r.g, k)) c[k]++;
+    });
+  });
+  return c;
+}
+function score(days) {
+  var p = 0, used = {}, c = countTags(days);
+  days.forEach(function (d) {
+    ['c', 'n'].forEach(function (s) { if (d[s]) { used[d[s]] = (used[d[s]] || 0) + 1; } });
+    var a = BYID[d.c], b = BYID[d.n];
+    if (a && b) ['pescado', 'carne', 'legumbre', 'huevo'].forEach(function (t) { if (has(a.g, t) && has(b.g, t)) p += 3; });
+  });
+  for (var id in used) if (used[id] > 1) p += (used[id] - 1) * 10;
+  if (pool('c').concat(pool('n')).some(function (r) { return has(r.g, 'legumbre'); })) {
+    if (c.legumbre < 3) p += (3 - c.legumbre) * 6; if (c.legumbre > 5) p += (c.legumbre - 5) * 3;
+  }
+  if (pool('c').concat(pool('n')).some(function (r) { return has(r.g, 'pescado'); })) {
+    if (c.pescado < 3) p += (3 - c.pescado) * 6; if (c.pescado > 5) p += (c.pescado - 5) * 3;
+  }
+  if (c.carne_roja > 2) p += (c.carne_roja - 2) * 8;
+  if (c.huevo > 5) p += (c.huevo - 5) * 3;
+  return p;
+}
+function genPlan() {
+  var D = pool('d'), C = pool('c'), N = pool('n'), best = null, bs = 1e9;
+  for (var i = 0; i < 400; i++) {
+    var days = [], bk = D.slice().sort(function () { return Math.random() - 0.5; });
+    for (var j = 0; j < 7; j++) {
+      days.push({d: bk.length ? bk[j % bk.length].id : null, c: C.length ? rnd(C).id : null, n: N.length ? rnd(N).id : null});
+    }
+    var sc = score(days);
+    if (sc < bs) { bs = sc; best = days; }
+  }
+  S.plan = {week: ymd(mondayOf(new Date())), days: best};
+  S.checked = {};
+  save();
+}
+function ensurePlan() {
+  var wk = ymd(mondayOf(new Date()));
+  if (!S.plan || S.plan.week !== wk) { genPlan(); return; }
+  var bad = S.plan.days.some(function (d) { return SLOTS.some(function (s) { var r = BYID[d[s[0]]]; return r && !allowed(r); }); });
+  if (bad) genPlan();
+}
+function swap(di, slot) {
+  var days = S.plan.days, cur = days[di][slot], cands = pool(slot).filter(function (r) { return r.id !== cur; });
+  if (!cands.length) { toast('No hay más recetas compatibles'); return; }
+  if (slot === 'd') { days[di].d = rnd(cands).id; save(); return; }
+  var scored = cands.map(function (r) {
+    var copy = clone(days); copy[di][slot] = r.id;
+    return {id: r.id, s: score(copy) + Math.random() * 4};
+  }).sort(function (a, b) { return a.s - b.s; });
+  days[di][slot] = scored[Math.floor(Math.random() * Math.min(3, scored.length))].id;
+  save();
+}
+function todayIdx() { return (new Date().getDay() + 6) % 7; }
+function tips() {
+  var c = countTags(S.plan.days), out = [], all = pool('c').concat(pool('n'));
+  var canLeg = all.some(function (r) { return has(r.g, 'legumbre'); });
+  var canFish = all.some(function (r) { return has(r.g, 'pescado'); });
+  if (canLeg && c.legumbre < 3) out.push('Esta semana solo hay ' + c.legumbre + ' platos de legumbres; lo recomendable son 3–4. Cambia alguna comida por lentejas, garbanzos o alubias.');
+  if (canFish && c.pescado < 3) out.push('Hay ' + c.pescado + ' platos de pescado; intenta llegar a 3–4 a la semana.');
+  if (c.carne_roja > 2) out.push('Hay ' + c.carne_roja + ' platos de carne roja; mejor no pasar de 2 a la semana.');
+  if (!out.length) out.push('Tu menú de esta semana está bien equilibrado.');
+  var gen = CONSEJOS.filter(function (t) { return !(has(S.cfg.excl, 'frutos_secos') && t.indexOf('frutos secos') !== -1); });
+  var d = new Date();
+  out.push(gen[(d.getDate() + d.getMonth()) % gen.length]);
+  return out;
+}
+function shopping() {
+  var f = factor(), ppl = S.cfg.people, map = {};
+  S.plan.days.forEach(function (d) {
+    SLOTS.forEach(function (s) {
+      var r = BYID[d[s[0]]]; if (!r) return;
+      r.i.forEach(function (x) {
+        var k = x[0] + '|' + x[2];
+        if (!map[k]) map[k] = {k: k, n: x[0], u: x[2], sec: x[3], q: 0};
+        map[k].q += x[1] * f * ppl;
+      });
+    });
+  });
+  var groups = {};
+  for (var k in map) { var it = map[k]; (groups[it.sec] = groups[it.sec] || []).push(it); }
+  for (var g in groups) groups[g].sort(function (a, b) { return a.n.localeCompare(b.n); });
+  return groups;
+}
+
+/* ---------- Tiempo ---------- */
+function wmo(c) {
+  // Solo emojis de Unicode 6, que Android 5 sí dibuja
+  if (c === 0) return ['☀️','Despejado'];
+  if (c === 1) return ['☀️','Poco nuboso'];
+  if (c === 2) return ['⛅','Intervalos nubosos'];
+  if (c === 3) return ['☁️','Nublado'];
+  if (c === 45 || c === 48) return ['🌁','Niebla'];
+  if (c >= 51 && c <= 57) return ['☔','Llovizna'];
+  if (c >= 61 && c <= 67) return ['☔','Lluvia'];
+  if (c >= 71 && c <= 77) return ['⛄','Nieve'];
+  if (c >= 80 && c <= 82) return ['☔','Chubascos'];
+  if (c === 85 || c === 86) return ['⛄','Chubascos de nieve'];
+  if (c >= 95) return ['⚡','Tormenta'];
+  return ['☁️',''];
+}
+function fetchWx() {
+  var c = S.cfg.city;
+  getOpenMeteo('https://api.open-meteo.com/v1/forecast?latitude=' + c.lat + '&longitude=' + c.lon +
+    '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m' +
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe%2FMadrid&forecast_days=5',
+    function (j) { wx = {t: Date.now(), d: j, city: c.name}; S.wx = wx; save(); renderWx(); },
+    function () { renderWx(true); });
+}
+function renderWx(failed) {
+  var el = $('wx'); if (!el) return;
+  if (!wx || !wx.d || !wx.d.current) { el.innerHTML = failed ? '<span class="mute">No se ha podido cargar el tiempo. Lo reintentaré en unos minutos.</span>' : '<span class="mute">Cargando el tiempo…</span>'; return; }
+  var cur = wx.d.current, dl = wx.d.daily, w = wmo(cur.weather_code), h = '';
+  h += '<h3>' + esc(wx.city) + '</h3><div class="wxnow"><span class="e">' + w[0] + '</span><div><div class="t">' + Math.round(cur.temperature_2m) + '°</div>' +
+    '<div class="mute">' + w[1] + ' · sensación ' + Math.round(cur.apparent_temperature) + '° · viento ' + Math.round(cur.wind_speed_10m) + ' km/h</div></div></div><div class="wxdays">';
+  for (var i = 0; i < dl.time.length; i++) {
+    var p = dl.time[i].split('-'), dd = new Date(+p[0], +p[1] - 1, +p[2]), e = wmo(dl.weather_code[i]);
+    h += '<div><b>' + (i === 0 ? 'Hoy' : DIAS[dd.getDay()].slice(0, 3)) + '</b><span class="e">' + e[0] + '</span>' +
+      Math.round(dl.temperature_2m_max[i]) + '° <span class="mute">' + Math.round(dl.temperature_2m_min[i]) + '°</span>' +
+      (dl.precipitation_probability_max[i] != null ? '<br><span class="mute small">💧 ' + dl.precipitation_probability_max[i] + '%</span>' : '') + '</div>';
+  }
+  el.innerHTML = h + '</div>' + (failed ? '<div class="mute small" style="margin-top:8px">Sin conexión: datos de la última actualización.</div>' : '');
+}
+
+/* ---------- Spotify ---------- */
+function spParts(u) { var m = /open\.spotify\.com\/(?:intl-[a-z]+\/)?(playlist|album|artist|track|show|episode)\/([A-Za-z0-9]+)/.exec(u || ''); return m ? [m[1], m[2]] : null; }
+function spUri(u) { var p = spParts(u); return p ? 'spotify:' + p[0] + ':' + p[1] : u; }
+
+/* ---------- Vistas ---------- */
+var VIEWS = [['home','🏠','Inicio'],['menu','🍴','Menú'],['recetas','📖','Recetas'],['compra','🛒','Compra'],['musica','🎵','Música'],['cal','📅','Calendario'],['cfg','🔧','Ajustes']];
+function renderNav() {
+  var d = new Date(), h = '<div class="nc" id="navclock">' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</div>';
+  VIEWS.forEach(function (v) { h += '<button data-a="nav:' + v[0] + '" class="' + (view === v[0] ? 'on' : '') + '"><span class="i">' + v[1] + '</span>' + v[2] + '</button>'; });
+  $('nav').innerHTML = h;
+}
+function dateStr(d) { return DIAS[d.getDay()] + ', ' + d.getDate() + ' de ' + MESES[d.getMonth()]; }
+function pending() { var g = shopping(), n = 0; for (var s in g) if (s !== 'B') g[s].forEach(function (it) { if (!S.checked[it.k]) n++; }); S.extra.forEach(function (x) { if (!x.done) n++; }); return n; }
+
+function vHome() {
+  var d = new Date(), t = S.plan.days[todayIdx()], h = '<div class="row"><div class="f1">';
+  h += '<div class="clock" id="clock">' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</div><div class="date" id="date">' + dateStr(d) + '</div>';
+  h += '<div class="card" id="wx"></div></div><div class="f1">';
+  h += '<div class="card"><h3>Hoy se come</h3>';
+  SLOTS.forEach(function (s) {
+    var r = BYID[t[s[0]]];
+    h += '<div class="meal" data-a="' + (r ? 'open:' + r.id : '') + '"><span class="k">' + s[1] + '</span><span class="n">' + (r ? esc(r.n) : '<span class="mute">Sin receta compatible</span>') + '</span><span class="mute">›</span></div>';
+  });
+  h += '</div><div class="card tip">💡 ' + esc(tips()[0]) + '</div><div class="row">';
+  h += '<div class="card f1" data-a="nav:compra" style="min-width:150px;cursor:pointer"><h3>Compra</h3><span class="big">' + pending() + '</span> <span class="mute">pendientes</span></div>';
+  h += '<div class="card f1" style="min-width:150px"><h3>Música</h3><a class="btn" href="spotify:">▶ Abrir Spotify</a></div>';
+  return h + '</div></div></div>';
+}
+function vMenu() {
+  var mon = new Date(S.plan.week.replace(/-/g, '/')), c = countTags(S.plan.days), f = factor(), ti = todayIdx();
+  var h = '<div class="top"><h2 style="margin:0">Menú de la semana del ' + mon.getDate() + ' de ' + MESES[mon.getMonth()] + '</h2><button class="btn" data-a="gen">🔄 Nuevo menú</button></div>';
+  h += '<div class="chips">';
+  function chip(lbl, n, ok, txt) { h += '<span class="' + (ok ? '' : 'bad') + '">' + lbl + ': ' + n + ' ' + txt + '</span>'; }
+  chip('Legumbres', c.legumbre, c.legumbre >= 3, '(objetivo 3–4)');
+  chip('Pescado', c.pescado, c.pescado >= 3 || S.cfg.diet === 'veg' || has(S.cfg.excl, 'pescado'), '(objetivo 3–4)');
+  chip('Carne roja', c.carne_roja, c.carne_roja <= 2, '(máx. 2)');
+  chip('Huevo', c.huevo, c.huevo <= 5, '');
+  h += '</div><table class="wk"><tr><th></th><th>Desayuno</th><th>Comida</th><th>Cena</th><th style="text-align:right">kcal*</th></tr>';
+  S.plan.days.forEach(function (d, i) {
+    var k = 0;
+    h += '<tr class="' + (i === ti ? 'today' : '') + '"><td>' + DIAS[(i + 1) % 7] + '</td>';
+    SLOTS.forEach(function (s) {
+      var r = BYID[d[s[0]]]; if (r) k += r.k;
+      h += '<td><div class="cell"><span class="n" data-a="' + (r ? 'open:' + r.id + ':' + i + ':' + s[0] : '') + '">' + (r ? esc(r.n) : '<span class="mute">—</span>') + '</span><button class="sw" data-a="swap:' + i + ':' + s[0] + '" title="Cambiar">↻</button></div></td>';
+    });
+    h += '<td>' + Math.round(k * f) + '</td></tr>';
+  });
+  h += '</table><p class="mute small">* Calorías de las tres comidas principales con tus raciones. Para llegar a tus ' + S.cfg.kcal + ' kcal diarias añade media mañana y merienda (fruta, yogur, frutos secos…). Toca un plato para ver la receta y ↻ para cambiarlo.</p>';
+  h += '<div class="card"><h3>Sugerencias</h3><ul class="tips">';
+  tips().forEach(function (t) { h += '<li>' + esc(t) + '</li>'; });
+  return h + '</ul></div>';
+}
+function vRecetas() {
+  var h = '<h2>Recetas</h2><div class="seg">';
+  [['all','Todas'],['d','Desayunos'],['c','Comidas'],['n','Cenas']].forEach(function (o) { h += '<button data-a="rf:' + o[0] + '" class="' + (recFilter === o[0] ? 'on' : '') + '">' + o[1] + '</button>'; });
+  h += '</div><input type="text" id="rq" placeholder="Buscar receta o ingrediente…" value="' + esc(recQuery) + '" style="margin-bottom:10px"><div class="rgrid" id="rlist">' + recList() + '</div>';
+  return h;
+}
+function recList() {
+  var q = recQuery.toLowerCase(), f = factor(), h = '', n = 0;
+  R.forEach(function (r) {
+    if (!allowed(r) || (recFilter !== 'all' && r.t !== recFilter)) return;
+    if (q && (r.n + ' ' + r.i.map(function (x) { return x[0]; }).join(' ')).toLowerCase().indexOf(q) === -1) return;
+    n++;
+    h += '<div class="rc" data-a="open:' + r.id + '"><b>' + esc(r.n) + '</b><span class="mute small">' + {d:'Desayuno',c:'Comida',n:'Cena'}[r.t] + ' · 🕒 ' + r.m + ' min · ' + Math.round(r.k * f) + ' kcal</span></div>';
+  });
+  return n ? h : '<p class="mute">No hay recetas que coincidan.</p>';
+}
+function vCompra() {
+  var g = shopping(), h = '<div class="top"><h2 style="margin:0">Lista de la compra</h2><span><button class="btn sec" data-a="uncheck">Desmarcar todo</button> <button class="btn sec" data-a="xclear">Quitar marcados</button></span></div>';
+  h += '<p class="mute small" style="margin-top:0">Para todo el menú de la semana · ' + S.cfg.people + ' persona' + (S.cfg.people > 1 ? 's' : '') + '. Toca para marcar.</p>';
+  h += '<div class="card"><div class="row" style="-webkit-align-items:center;align-items:center"><input type="text" id="xin" class="f1" placeholder="Añadir otra cosa (p. ej. papel de cocina)"><button class="btn" data-a="xadd">Añadir</button></div></div>';
+  h += '<div class="cols2">';
+  if (S.extra.length) {
+    h += '<div class="grp"><div class="sec-h">Añadido por ti</div>';
+    S.extra.forEach(function (x, i) { h += '<div class="it' + (x.done ? ' done' : '') + '" data-a="xchk:' + i + '"><span class="bx">' + (x.done ? '✓' : '') + '</span><span class="nm">' + esc(x.t) + '</span><button class="x" data-a="xdel:' + i + '">×</button></div>'; });
+    h += '</div>';
+  }
+  SEC_ORDER.forEach(function (s) {
+    if (!g[s]) return;
+    h += '<div class="grp"><div class="sec-h">' + SECS[s] + '</div>';
+    g[s].forEach(function (it) {
+      var on = !!S.checked[it.k], q = s === 'B' ? '' : fmtQty(it.q, it.u);
+      h += '<div class="it' + (on ? ' done' : '') + '" data-a="chk:' + esc(it.k) + '"><span class="bx">' + (on ? '✓' : '') + '</span><span class="nm">' + esc(it.n) + '</span><span class="q">' + q + '</span></div>';
+    });
+    h += '</div>';
+  });
+  return h + '</div>';
+}
+function vMusica() {
+  var h = '<h2>Música</h2><div class="card"><a class="btn" href="spotify:" style="font-size:18px;padding:14px 22px">▶ Abrir Spotify</a>' +
+    '<p class="mute small">Abre la app de Spotify instalada en la tablet. Si no se abre, instálala desde Play Store.</p></div><div class="card"><h3>Tus listas</h3>';
+  if (!S.cfg.playlists.length) h += '<p class="mute">Añade listas en Ajustes pegando el enlace de Spotify (Compartir → Copiar enlace).</p>';
+  S.cfg.playlists.forEach(function (p, i) {
+    h += '<div class="pl"><span class="n">' + esc(p.n) + '</span><a class="btn" href="' + esc(spUri(p.u)) + '">▶ Reproducir</a>' +
+      (spParts(p.u) ? '<button class="btn sec" data-a="prev:' + i + '">Ver canciones</button>' : '') + '</div>';
+  });
+  return h + '<div id="prev" style="margin-top:12px"></div></div>';
+}
+function vCal() {
+  if (!S.cfg.gcal) return '<h2>Calendario</h2><div class="card"><p>Para ver tu Google Calendar aquí:</p><ol><li>Ve a <b>Ajustes</b> y escribe tu dirección de Gmail.</li><li>En el navegador de la tablet, inicia sesión en Google con esa cuenta (entra una vez en calendar.google.com).</li></ol><button class="btn" data-a="nav:cfg">Ir a Ajustes</button></div>';
+  var src = 'https://calendar.google.com/calendar/embed?src=' + encodeURIComponent(S.cfg.gcal) + '&ctz=Europe%2FMadrid&mode=AGENDA&showTitle=0&showPrint=0&showCalendars=0&showTz=0&hl=es';
+  return '<div class="top"><h2 style="margin:0">Calendario</h2><span><button class="btn sec" data-a="calmode:AGENDA">Agenda</button> <button class="btn sec" data-a="calmode:WEEK">Semana</button> <button class="btn sec" data-a="calmode:MONTH">Mes</button></span></div>' +
+    '<iframe id="calf" src="' + esc(src) + '" style="height:calc(100vh - 120px);min-height:400px"></iframe>' +
+    '<p class="mute small">Si sale vacío o pide permisos, inicia sesión en Google desde el navegador de la tablet.</p>';
+}
+function vCfg() {
+  var c = S.cfg, h = '<h2>Ajustes</h2><div class="row"><div class="f1"><div class="card"><h3>Dieta</h3>';
+  h += '<label class="l">Personas</label><input type="number" id="cp" min="1" max="10" value="' + c.people + '">';
+  h += '<label class="l">Calorías diarias objetivo (por persona)</label><input type="number" id="ck" min="1200" max="3500" step="50" value="' + c.kcal + '"><div class="mute small">Ajusta el tamaño de las raciones. Referencia: unas 1.800–2.000 para mujeres y 2.200–2.500 para hombres con actividad moderada; menos si quieres perder peso.</div>';
+  h += '<label class="l">Tipo de dieta</label><select id="cd">';
+  [['omni','Omnívora'],['pesc','Pescetariana (sin carne)'],['veg','Vegetariana']].forEach(function (o) { h += '<option value="' + o[0] + '"' + (c.diet === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
+  h += '</select><label class="l">Excluir alimentos</label>';
+  TAGS.forEach(function (t) { h += '<label class="chk"><input type="checkbox" class="cx" value="' + t[0] + '"' + (has(c.excl, t[0]) ? ' checked' : '') + '>' + t[1] + '</label>'; });
+  h += '</div></div><div class="f1"><div class="card"><h3>Tiempo</h3><label class="l">Ciudad: <b>' + esc(c.city.name) + '</b></label><div class="row"><input type="text" id="cc" class="f1" placeholder="Buscar otra ciudad"><button class="btn sec" data-a="city">Buscar</button></div></div>';
+  h += '<div class="card"><h3>Calendario</h3><label class="l">Tu Gmail (Google Calendar)</label><input type="email" id="cg" placeholder="nombre@gmail.com" value="' + esc(c.gcal) + '"></div>';
+  h += '<div class="card"><h3>Spotify</h3><label class="l">Listas (una por línea: Nombre | enlace)</label><textarea id="cl">' + esc(c.playlists.map(function (p) { return p.n + ' | ' + p.u; }).join('\n')) + '</textarea><div class="mute small">En Spotify: lista → ··· → Compartir → Copiar enlace.</div></div>';
+  h += '<div class="card"><h3>Pantalla</h3><label class="l">Tema</label><select id="ct">';
+  [['auto','Automático (oscuro de 21:00 a 8:00)'],['light','Siempre claro'],['dark','Siempre oscuro']].forEach(function (o) { h += '<option value="' + o[0] + '"' + (c.theme === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
+  h += '</select><div style="margin-top:12px"><button class="btn sec" data-a="fs">Pantalla completa</button></div></div></div></div>';
+  return h + '<button class="btn" data-a="savecfg" style="font-size:18px;padding:14px 28px">Guardar ajustes</button>';
+}
+
+function render() {
+  ensurePlan();
+  applyTheme();
+  renderNav();
+  var fn = {home:vHome,menu:vMenu,recetas:vRecetas,compra:vCompra,musica:vMusica,cal:vCal,cfg:vCfg}[view];
+  $('main').innerHTML = fn();
+  if (view === 'home') renderWx();
+}
+
+/* ---------- Modal de receta ---------- */
+function openRecipe(id, di, slot) {
+  var r = BYID[id]; if (!r) return;
+  var f = factor(), ppl = S.cfg.people;
+  var h = '<div class="top"><h2 style="margin:0">' + esc(r.n) + '</h2><button class="btn sec" data-a="close">Cerrar ✕</button></div>';
+  h += '<p class="mute">🕒 ' + r.m + ' min · 🔥 ' + Math.round(r.k * f) + ' kcal por ración · para ' + ppl + ' persona' + (ppl > 1 ? 's' : '') + '</p><div class="row"><div class="f1"><h3>Ingredientes</h3><ul>';
+  r.i.forEach(function (x) { var q = fmtQty(x[1] * f * ppl, x[2]); h += '<li>' + esc(x[0]) + (q ? ' — <b>' + q + '</b>' : ' <span class="mute">(al gusto)</span>') + '</li>'; });
+  h += '</ul></div><div class="f1" style="min-width:320px"><h3>Preparación</h3><ol>';
+  r.s.forEach(function (s) { h += '<li>' + esc(s) + '</li>'; });
+  h += '</ol></div></div>';
+  if (di != null) h += '<button class="btn sec" data-a="swapm:' + di + ':' + slot + '">↻ Cambiar este plato en el menú</button>';
+  $('md').innerHTML = h;
+  $('ov').className = 'on';
+}
+function closeModal() { $('ov').className = ''; }
+
+/* ---------- Eventos ---------- */
+document.addEventListener('click', function (e) {
+  var t = e.target;
+  if (t.id === 'ov') { closeModal(); return; }
+  while (t && t.nodeType === 1 && !t.getAttribute('data-a')) t = t.parentNode;
+  if (!t || t.nodeType !== 1) return;
+  var a = t.getAttribute('data-a'), p = a.split(':'), cmd = p[0];
+  if (!cmd) return;
+  e.stopPropagation();
+  if (cmd === 'nav') { view = p[1]; closeModal(); render(); $('main').scrollTop = 0; }
+  else if (cmd === 'open') openRecipe(p[1], p[2], p[3]);
+  else if (cmd === 'close') closeModal();
+  else if (cmd === 'swap') { swap(+p[1], p[2]); render(); }
+  else if (cmd === 'swapm') { swap(+p[1], p[2]); closeModal(); render(); toast('Plato cambiado'); }
+  else if (cmd === 'gen') { genPlan(); render(); toast('Menú nuevo generado'); }
+  else if (cmd === 'rf') { recFilter = p[1]; render(); }
+  else if (cmd === 'chk') { var k = a.slice(4); if (S.checked[k]) delete S.checked[k]; else S.checked[k] = 1; save(); render(); }
+  else if (cmd === 'uncheck') { S.checked = {}; S.extra.forEach(function (x) { x.done = false; }); save(); render(); }
+  else if (cmd === 'xadd') { var v = $('xin').value.replace(/^\s+|\s+$/g, ''); if (v) { S.extra.push({t: v, done: false}); save(); render(); } }
+  else if (cmd === 'xchk') { S.extra[+p[1]].done = !S.extra[+p[1]].done; save(); render(); }
+  else if (cmd === 'xdel') { S.extra.splice(+p[1], 1); save(); render(); }
+  else if (cmd === 'xclear') { S.extra = S.extra.filter(function (x) { return !x.done; }); save(); render(); toast('Quitados los añadidos marcados'); }
+  else if (cmd === 'prev') {
+    var sp = spParts(S.cfg.playlists[+p[1]].u);
+    $('prev').innerHTML = '<iframe src="https://open.spotify.com/embed/' + sp[0] + '/' + sp[1] + '" style="height:380px" allow="encrypted-media"></iframe><p class="mute small">Vista previa. Para escuchar canciones completas usa «Reproducir», que abre la app.</p>';
+  }
+  else if (cmd === 'calmode') { var fr = $('calf'); if (fr) fr.src = fr.src.replace(/mode=[A-Z]+/, 'mode=' + p[1]); }
+  else if (cmd === 'city') {
+    var q = $('cc').value.replace(/^\s+|\s+$/g, ''); if (!q) return;
+    getOpenMeteo('https://geocoding-api.open-meteo.com/v1/search?count=1&language=es&name=' + encodeURIComponent(q), function (j) {
+      if (!j.results || !j.results.length) { toast('No encuentro esa ciudad'); return; }
+      var r = j.results[0]; S.cfg.city = {name: r.name, lat: r.latitude, lon: r.longitude}; wx = null; S.wx = null; save(); fetchWx(); render(); toast('Ciudad: ' + r.name);
+    }, function () { toast('Sin conexión'); });
+  }
+  else if (cmd === 'fs') {
+    var de = document.documentElement, rq = de.requestFullscreen || de.webkitRequestFullscreen || de.mozRequestFullScreen;
+    if (rq) rq.call(de);
+  }
+  else if (cmd === 'savecfg') {
+    var c = S.cfg;
+    c.people = Math.max(1, Math.min(10, parseInt($('cp').value, 10) || 2));
+    c.kcal = Math.max(1200, Math.min(3500, parseInt($('ck').value, 10) || 2000));
+    c.diet = $('cd').value;
+    c.excl = [];
+    var xs = document.querySelectorAll('.cx');
+    for (var i = 0; i < xs.length; i++) if (xs[i].checked) c.excl.push(xs[i].value);
+    c.gcal = $('cg').value.replace(/\s/g, '');
+    c.theme = $('ct').value;
+    c.playlists = [];
+    $('cl').value.split('\n').forEach(function (line) {
+      var bits = line.split('|'); if (bits.length < 2) return;
+      var n = bits[0].replace(/^\s+|\s+$/g, ''), u = bits.slice(1).join('|').replace(/^\s+|\s+$/g, '');
+      if (n && u) c.playlists.push({n: n, u: u});
+    });
+    save(); render(); toast('Ajustes guardados');
+  }
+});
+document.addEventListener('input', function (e) {
+  if (e.target.id === 'rq') { recQuery = e.target.value; $('rlist').innerHTML = recList(); }
+});
+document.addEventListener('keydown', function (e) {
+  if (e.keyCode === 13 && e.target.id === 'xin') { var b = document.querySelector('[data-a="xadd"]'); if (b) b.click(); }
+  if (e.keyCode === 27) closeModal();
+});
+
+/* ---------- Reloj y tema ---------- */
+var PAL = {
+  light: {bg:'#f4f1ea',card:'#ffffff',ink:'#22262a',mute:'#6b7177',line:'#e3ded3',acc:'#2f7d5b',acc2:'#e6f1ea',warn:'#b5562b',warn2:'#f8e9e1'},
+  dark:  {bg:'#111315',card:'#1b1e21',ink:'#ebe8e1',mute:'#9aa0a6',line:'#2c3034',acc:'#62c194',acc2:'#1d2b24',warn:'#e39368',warn2:'#33231b'}
+};
+var VARS_OK = !!(window.CSS && CSS.supports && CSS.supports('color', 'var(--a)'));
+var BASE_CSS = $('base').textContent, curTheme = null;
+function applyTheme() {
+  var m = S.cfg.theme, hr = new Date().getHours();
+  var t = (m === 'dark' || (m === 'auto' && (hr >= 21 || hr < 8))) ? 'dark' : 'light';
+  document.body.className = t === 'dark' ? 'dark' : '';
+  if (t === curTheme) return;
+  curTheme = t;
+  var p = PAL[t];
+  if (VARS_OK) { for (var k in p) document.documentElement.style.setProperty('--' + k, p[k]); }
+  else $('base').textContent = BASE_CSS.replace(/var\(--([a-z0-9]+)\)/g, function (all, k) { return p[k] || all; });
+}
+var lastDay = new Date().getDate();
+setInterval(function () {
+  var d = new Date(), hm = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  if ($('clock')) $('clock').textContent = hm;
+  if ($('date')) $('date').textContent = dateStr(d);
+  if ($('navclock')) $('navclock').textContent = hm;
+  applyTheme();
+  if (d.getDate() !== lastDay) { lastDay = d.getDate(); if (view === 'home' || view === 'menu') render(); else ensurePlan(); }
+}, 10000);
+setInterval(fetchWx, 30 * 60 * 1000);
+
+load();
+render();
+fetchWx();
+})();
+</script>
+</body>
+</html>
