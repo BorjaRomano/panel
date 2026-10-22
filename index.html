@@ -87,6 +87,14 @@ textarea{min-height:90px}
 .pl .n{-webkit-flex:1;flex:1;font-size:18px}
 .pl .btn{margin-left:8px}
 iframe{border:0;width:100%;border-radius:12px;background:var(--card)}
+.rt{position:relative;display:inline-block;background:var(--acc2);color:var(--acc);border:1px solid transparent;border-radius:12px;padding:14px 16px;margin:0 8px 8px 0;font-weight:600;font-size:16px;cursor:pointer;min-width:150px;text-align:left}
+.rt.on{background:var(--acc);color:#fff}
+body.dark .rt.on{color:#0d1f16}
+.rt .rx{position:absolute;top:-8px;right:-8px;background:var(--warn);color:#fff;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;font-size:13px}
+#player{position:fixed;right:20px;bottom:20px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.18);display:none;z-index:8}
+#player .pe{font-size:26px;vertical-align:middle;margin-right:8px}
+#player .pn{display:inline-block;vertical-align:middle;margin-right:12px;max-width:220px}
+#player .btn{vertical-align:middle}
 /* ajustes */
 label.l{display:block;font-weight:600;margin:14px 0 6px}
 .chk{display:inline-block;margin:0 14px 8px 0;font-size:15px}
@@ -118,6 +126,8 @@ label.l{display:block;font-weight:600;margin:14px 0 6px}
 <main id="main"></main>
 <div id="ov"><div id="md"></div></div>
 <div id="toast"></div>
+<div id="player"></div>
+<audio id="au" preload="none"></audio>
 <script>
 (function () {
 'use strict';
@@ -191,9 +201,29 @@ var CONSEJOS = [
 
 /* ---------- Estado ---------- */
 var KEY = 'panelEdison.v1';
+// Emisoras por defecto (comprobadas por https). id = stationuuid de radio-browser.info, para refrescar la URL si deja de funcionar
+var RADIOS = [
+ {n:'Cadena SER',u:'https://playerservices.streamtheworld.com/api/livestream-redirect/CADENASER.mp3',id:'692a3b69-0f68-11ea-a87e-52543be04c81'},
+ {n:'COPE',u:'https://net1-cope-rrcast.flumotion.com/cope/net1.mp3'},
+ {n:'Onda Cero',u:'https://atres-live.ondacero.es/live/ondacero/bitrate_1.m3u8',id:'b8601593-152a-429d-9cb2-5065cf7c0185'},
+ {n:'RNE Radio Nacional',u:'https://dispatcher.rndfnk.com/crtve/rne1/main/mp3/high'},
+ {n:'Radio 5 Noticias',u:'https://dispatcher.rndfnk.com/crtve/rne5/main/mp3/high'},
+ {n:'Radio 3',u:'https://dispatcher.rndfnk.com/crtve/rner3/main/mp3/high'},
+ {n:'Radio Clásica',u:'https://dispatcher.rndfnk.com/crtve/rnerc/main/mp3/high'},
+ {n:'RPA Asturias',u:'https://cdn-rtpa.watchity.net/wct-3545e416-1a16-44b5-b0db-481136ecacc9/continuous/7be5c015-1da2-4927-a49b-8d232faa69be/radio/index.m3u8',id:'24c6a5e3-5acf-48d1-90e2-7aba2384c7e3'},
+ {n:'LOS40',u:'https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40.mp3'},
+ {n:'LOS40 Classic',u:'https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40_CLASSIC.mp3',id:'de39fc19-0636-4d05-acbb-2aba2c0d1f7a'},
+ {n:'Cadena 100',u:'https://cadena100-cope-rrcast.flumotion.com/cope/cadena100.mp3',id:'960c37c6-0601-11e8-ae97-52543be04c81'},
+ {n:'Cadena Dial',u:'https://playerservices.streamtheworld.com/api/livestream-redirect/CADENADIAL.mp3',id:'84c6f3cc-3c66-415d-aff5-050b5f330adc'},
+ {n:'Europa FM',u:'https://atres-live.europafm.com/live/europafm/bitrate_1.m3u8'},
+ {n:'Rock FM',u:'https://rockfm-cope-rrcast.flumotion.com/cope/rockfm-low.mp3',id:'e46649e5-adff-42fb-b991-74d3de402576'},
+ {n:'Kiss FM',u:'https://adhandler.kissfmradio.cires21.com/get_link?url=https://bbkissfm.kissfmradio.cires21.com/bbkissfm.mp3',id:'743889d5-5472-4e9f-ac61-5f0f04e7efa8'},
+ {n:'Radio Marca',u:'https://playerservices.streamtheworld.com/api/livestream-redirect/RADIOMARCA_NACIONAL_SC',id:'07dbb40c-f3a8-4f45-925d-c16ef08c7293'}
+];
 var DEF = {city:{name:'Oviedo',lat:43.3614,lon:-5.8494},people:2,kcal:2000,diet:'omni',excl:[],gcal:'',theme:'auto',
-  playlists:[{n:'Today\'s Top Hits',u:'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'}]};
+  playlists:[{n:'Today\'s Top Hits',u:'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'}],radios:RADIOS};
 var S, view = 'home', recFilter = 'all', recQuery = '', wx = null;
+var playing = null, rres = [], redit = false;
 
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function load() {
@@ -387,6 +417,59 @@ function renderWx(failed) {
   el.innerHTML = h + '</div>' + (failed ? '<div class="mute small" style="margin-top:8px">Sin conexión: datos de la última actualización.</div>' : '');
 }
 
+/* ---------- Radio ---------- */
+var RB = ['https://de1.api.radio-browser.info', 'https://fi1.api.radio-browser.info', 'https://at1.api.radio-browser.info'];
+function rbGet(path, ok, fail, i) {
+  i = i || 0;
+  getJSON(RB[i] + path, ok, function () { if (i + 1 < RB.length) rbGet(path, ok, fail, i + 1); else if (fail) fail(); });
+}
+function radioStatus(txt) { var el = $('pls'); if (el) el.textContent = txt; }
+function play(st) {
+  var a = $('au');
+  playing = {n: st.n, u: st.u, id: st.id, retried: false};
+  a.src = st.u;
+  var p = a.play(); if (p && p.catch) p.catch(function () {});
+  renderPlayer(); radioStatus('Conectando…');
+  if (view === 'musica' || view === 'home') render();
+}
+function stopRadio() {
+  var a = $('au');
+  a.pause(); a.removeAttribute('src'); try { a.load(); } catch (e) {}
+  playing = null; renderPlayer();
+  if (view === 'musica' || view === 'home') render();
+}
+function radioError() {
+  if (!playing) return;
+  var st = playing;
+  // Si la emisora está en radio-browser, pide su URL actual y reintenta una vez
+  if (st.id && !st.retried) {
+    st.retried = true; radioStatus('Buscando otra señal…');
+    rbGet('/json/stations/byuuid/' + st.id, function (j) {
+      if (!j.length || !j[0].url_resolved || j[0].url_resolved === st.u) { radioFail(st); return; }
+      st.u = j[0].url_resolved;
+      S.cfg.radios.forEach(function (r) { if (r.id === st.id) r.u = st.u; }); save();
+      $('au').src = st.u; var p = $('au').play(); if (p && p.catch) p.catch(function () {});
+    }, function () { radioFail(st); });
+  } else radioFail(st);
+}
+function radioFail(st) { toast('No se puede reproducir ' + st.n + ' ahora mismo'); stopRadio(); }
+function renderPlayer() {
+  var el = $('player');
+  if (!playing) { el.style.display = 'none'; return; }
+  el.innerHTML = '<span class="pe">📻</span><span class="pn"><b>' + esc(playing.n) + '</b><br><span id="pls" class="small"></span></span><button class="btn" data-a="rstop">■ Parar</button>';
+  el.style.display = 'block';
+}
+function radioTiles(max) {
+  var h = '', list = S.cfg.radios;
+  list.forEach(function (r, i) {
+    if (max && i >= max) return;
+    var on = playing && playing.u === r.u;
+    h += '<button class="rt' + (on ? ' on' : '') + '" data-a="' + (on ? 'rstop' : 'rplay:' + i) + '">' + (on ? '■ ' : '▶ ') + esc(r.n) +
+      (redit && !max ? '<span class="rx" data-a="rdel:' + i + '">✕</span>' : '') + '</button>';
+  });
+  return h || '<p class="mute">No tienes emisoras guardadas. Búscalas abajo.</p>';
+}
+
 /* ---------- Spotify ---------- */
 function spParts(u) { var m = /open\.spotify\.com\/(?:intl-[a-z]+\/)?(playlist|album|artist|track|show|episode)\/([A-Za-z0-9]+)/.exec(u || ''); return m ? [m[1], m[2]] : null; }
 function spUri(u) { var p = spParts(u); return p ? 'spotify:' + p[0] + ':' + p[1] : u; }
@@ -412,8 +495,9 @@ function vHome() {
   });
   h += '</div><div class="card tip">💡 ' + esc(tips()[0]) + '</div><div class="row">';
   h += '<div class="card f1" data-a="nav:compra" style="min-width:150px;cursor:pointer"><h3>Compra</h3><span class="big">' + pending() + '</span> <span class="mute">pendientes</span></div>';
-  h += '<div class="card f1" style="min-width:150px"><h3>Música</h3><a class="btn" href="spotify:">▶ Abrir Spotify</a></div>';
-  return h + '</div></div></div>';
+  h += '<div class="card f1" style="min-width:150px"><h3>Spotify</h3><a class="btn" href="spotify:">▶ Abrir Spotify</a></div></div>';
+  h += '<div class="card"><div class="top"><h3 style="margin:0">Radio</h3><button class="btn sec sm" data-a="nav:musica">Todas ›</button></div>' + radioTiles(6) + '</div>';
+  return h + '</div></div>';
 }
 function vMenu() {
   var mon = new Date(S.plan.week.replace(/-/g, '/')), c = countTags(S.plan.days), f = factor(), ti = todayIdx();
@@ -477,14 +561,28 @@ function vCompra() {
   return h + '</div>';
 }
 function vMusica() {
-  var h = '<h2>Música</h2><div class="card"><a class="btn" href="spotify:" style="font-size:18px;padding:14px 22px">▶ Abrir Spotify</a>' +
-    '<p class="mute small">Abre la app de Spotify instalada en la tablet. Si no se abre, instálala desde Play Store.</p></div><div class="card"><h3>Tus listas</h3>';
+  var h = '<h2>Música</h2><div class="row"><div class="f1" style="min-width:420px"><div class="card"><div class="top"><h3 style="margin:0">Radio</h3>' +
+    '<button class="btn sec sm" data-a="redit">' + (redit ? 'Listo' : 'Editar') + '</button></div><div>' + radioTiles() + '</div></div>';
+  h += '<div class="card"><h3>Buscar emisoras</h3><div class="row" style="-webkit-align-items:center;align-items:center"><input type="text" id="rsq" class="f1" placeholder="Nombre, ciudad o estilo (p. ej. jazz, Gijón)"><button class="btn" data-a="rsearch">Buscar</button></div><div id="rres" style="margin-top:8px">' + radioResults() + '</div></div></div>';
+  h += '<div class="f1"><div class="card"><h3>Spotify</h3><a class="btn" href="spotify:" style="font-size:18px;padding:14px 22px">▶ Abrir Spotify</a>' +
+    '<p class="mute small">Abre la app de Spotify si está instalada en la tablet.</p></div><div class="card"><h3>Tus listas</h3>';
   if (!S.cfg.playlists.length) h += '<p class="mute">Añade listas en Ajustes pegando el enlace de Spotify (Compartir → Copiar enlace).</p>';
   S.cfg.playlists.forEach(function (p, i) {
     h += '<div class="pl"><span class="n">' + esc(p.n) + '</span><a class="btn" href="' + esc(spUri(p.u)) + '">▶ Reproducir</a>' +
       (spParts(p.u) ? '<button class="btn sec" data-a="prev:' + i + '">Ver canciones</button>' : '') + '</div>';
   });
-  return h + '<div id="prev" style="margin-top:12px"></div></div>';
+  return h + '<div id="prev" style="margin-top:12px"></div></div></div></div>';
+}
+function radioResults() {
+  if (rres === null) return '<p class="mute">Buscando…</p>';
+  var h = '';
+  rres.forEach(function (r, i) {
+    var saved = S.cfg.radios.some(function (x) { return x.u === r.u || (r.id && x.id === r.id); });
+    h += '<div class="pl"><span class="n">' + esc(r.n) + '<br><span class="mute small">' + esc(r.d) + '</span></span>' +
+      '<button class="btn sec" data-a="rsplay:' + i + '">▶</button>' +
+      (saved ? '<span class="mute small" style="margin-left:8px">Guardada</span>' : '<button class="btn" data-a="rfav:' + i + '">+ Guardar</button>') + '</div>';
+  });
+  return h;
 }
 function vCal() {
   if (!S.cfg.gcal) return '<h2>Calendario</h2><div class="card"><p>Para ver tu Google Calendar aquí:</p><ol><li>Ve a <b>Ajustes</b> y escribe tu dirección de Gmail.</li><li>En el navegador de la tablet, inicia sesión en Google con esa cuenta (entra una vez en calendar.google.com).</li></ol><button class="btn" data-a="nav:cfg">Ir a Ajustes</button></div>';
@@ -561,6 +659,34 @@ document.addEventListener('click', function (e) {
     var sp = spParts(S.cfg.playlists[+p[1]].u);
     $('prev').innerHTML = '<iframe src="https://open.spotify.com/embed/' + sp[0] + '/' + sp[1] + '" style="height:380px" allow="encrypted-media"></iframe><p class="mute small">Vista previa. Para escuchar canciones completas usa «Reproducir», que abre la app.</p>';
   }
+  else if (cmd === 'rplay') play(S.cfg.radios[+p[1]]);
+  else if (cmd === 'rsplay') play(rres[+p[1]]);
+  else if (cmd === 'rstop') stopRadio();
+  else if (cmd === 'redit') { redit = !redit; render(); }
+  else if (cmd === 'rdel') { S.cfg.radios.splice(+p[1], 1); save(); render(); }
+  else if (cmd === 'rfav') { var nr = rres[+p[1]]; S.cfg.radios.push({n: nr.n, u: nr.u, id: nr.id}); save(); render(); toast(nr.n + ' guardada'); }
+  else if (cmd === 'rsearch') {
+    var rq = $('rsq').value.replace(/^\s+|\s+$/g, ''); if (!rq) return;
+    rres = null; $('rres').innerHTML = radioResults();
+    var done = function (j) {
+      rres = [];
+      j.forEach(function (s) {
+        var u = s.url_resolved || s.url;
+        // La página va por https: las emisoras solo http no sonarían
+        if (!/^https:/.test(u) || rres.length >= 20) return;
+        var nm = s.name.replace(/^\s+|\s+$/g, '');
+        rres.push({n: nm.length > 60 ? nm.slice(0, 57) + '…' : nm, u: u, id: s.stationuuid,
+          d: [s.state, s.country, s.tags ? s.tags.split(',').slice(0, 3).join(', ') : ''].filter(function (x) { return x; }).join(' · ')});
+      });
+      var el = $('rres'); if (el) el.innerHTML = rres.length ? radioResults() : '<p class="mute">No he encontrado emisoras con ese nombre.</p>';
+      $('rsq').value = rq;
+    };
+    var qs = encodeURIComponent(rq);
+    rbGet('/json/stations/search?name=' + qs + '&order=clickcount&reverse=true&limit=60&hidebroken=true', function (j) {
+      if (j.length) done(j);
+      else rbGet('/json/stations/search?tag=' + qs + '&order=clickcount&reverse=true&limit=60&hidebroken=true', done, function () { done([]); });
+    }, function () { rres = []; var el = $('rres'); if (el) el.innerHTML = '<p class="mute">Sin conexión con el buscador de emisoras.</p>'; });
+  }
   else if (cmd === 'calmode') { var fr = $('calf'); if (fr) fr.src = fr.src.replace(/mode=[A-Z]+/, 'mode=' + p[1]); }
   else if (cmd === 'city') {
     var q = $('cc').value.replace(/^\s+|\s+$/g, ''); if (!q) return;
@@ -597,6 +723,7 @@ document.addEventListener('input', function (e) {
 });
 document.addEventListener('keydown', function (e) {
   if (e.keyCode === 13 && e.target.id === 'xin') { var b = document.querySelector('[data-a="xadd"]'); if (b) b.click(); }
+  if (e.keyCode === 13 && e.target.id === 'rsq') { var b2 = document.querySelector('[data-a="rsearch"]'); if (b2) b2.click(); }
   if (e.keyCode === 27) closeModal();
 });
 
@@ -627,6 +754,11 @@ setInterval(function () {
   if (d.getDate() !== lastDay) { lastDay = d.getDate(); if (view === 'home' || view === 'menu') render(); else ensurePlan(); }
 }, 10000);
 setInterval(fetchWx, 30 * 60 * 1000);
+
+var au = $('au');
+au.addEventListener('playing', function () { radioStatus('En directo'); });
+au.addEventListener('waiting', function () { radioStatus('Cargando…'); });
+au.addEventListener('error', function () { if (au.getAttribute('src')) radioError(); });
 
 load();
 render();
