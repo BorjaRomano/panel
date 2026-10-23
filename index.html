@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Panel de casa</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#2f7d5b">
 <style id="base">
 /* Los colores var(--x) los rellena applyTheme(); en navegadores sin variables CSS (Android 5) los sustituye en el texto */
 *{box-sizing:border-box}
@@ -40,11 +43,20 @@ body.dark .btn{color:#0d1f16}
 .wxdays{display:-webkit-flex;display:flex;margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
 .wxdays div{-webkit-flex:1;flex:1;text-align:center;font-size:14px}
 .wxdays .e{font-size:28px;display:block;margin:2px 0}
+.wxhours{display:-webkit-flex;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.wxhours div{-webkit-flex:1 0 50px;flex:1 0 50px;text-align:center;font-size:14px;padding:0 2px}
+.wxhours .e{font-size:22px;display:block;margin:4px 0}
 .meal{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .meal:last-child{border-bottom:0}
 .meal .k{width:96px;color:var(--mute);font-size:14px}
 .meal .n{-webkit-flex:1;flex:1;font-size:18px}
 .tip{background:var(--acc2);border-color:transparent}
+/* Columnas de Inicio: la última tarjeta de cada una se estira para que ambas acaben a la misma altura */
+.hcol{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
+.hcol>.card:last-child{-webkit-flex-grow:1;flex-grow:1}
+.meal.shop{border-bottom:0}
+.meal.shop .k{color:var(--acc);font-weight:600}
+iframe.hcal{height:118px;display:block}
 .big{font-size:34px;font-weight:700}
 /* menú */
 table.wk{width:100%;border-collapse:separate;border-spacing:0 6px}
@@ -90,7 +102,11 @@ iframe{border:0;width:100%;border-radius:12px;background:var(--card)}
 .rt{position:relative;display:inline-block;background:var(--acc2);color:var(--acc);border:1px solid transparent;border-radius:12px;padding:14px 16px;margin:0 8px 8px 0;font-weight:600;font-size:16px;cursor:pointer;min-width:150px;text-align:left}
 .rt.on{background:var(--acc);color:#fff}
 body.dark .rt.on{color:#0d1f16}
-.rt .rx{position:absolute;top:-8px;right:-8px;background:var(--warn);color:#fff;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;font-size:13px}
+.rt.ed{cursor:default;padding:6px 6px;display:inline-block}
+.rt.ed .nm{display:inline-block;vertical-align:middle;margin:0 6px;min-width:90px}
+.rt.ed .mv{vertical-align:middle;background:var(--card);color:var(--acc);border:1px solid var(--line);border-radius:8px;width:40px;height:40px;font-size:22px;line-height:1;cursor:pointer}
+.rt.ed .mv[disabled]{opacity:.3;cursor:default}
+.rt .rx{cursor:pointer;position:absolute;top:-8px;right:-8px;background:var(--warn);color:#fff;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;font-size:13px}
 #player{position:fixed;right:20px;bottom:20px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.18);display:none;z-index:8}
 #player .pe{font-size:26px;vertical-align:middle;margin-right:8px}
 #player .pn{display:inline-block;vertical-align:middle;margin-right:12px;max-width:220px}
@@ -221,7 +237,7 @@ var RADIOS = [
  {n:'Radio Marca',u:'https://playerservices.streamtheworld.com/api/livestream-redirect/RADIOMARCA_NACIONAL_SC',id:'07dbb40c-f3a8-4f45-925d-c16ef08c7293'}
 ];
 var DEF = {city:{name:'Oviedo',lat:43.3614,lon:-5.8494},people:2,kcal:2000,diet:'omni',excl:[],gcal:'',theme:'auto',
-  playlists:[{n:'Today\'s Top Hits',u:'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'}],radios:RADIOS,wake:'always'};
+  radios:RADIOS,wake:'always',autofs:true};
 var S, view = 'home', recFilter = 'all', recQuery = '', wx = null;
 var playing = null, rres = [], redit = false;
 
@@ -394,11 +410,17 @@ function wmo(c) {
   if (c >= 95) return ['⚡','Tormenta'];
   return ['☁️',''];
 }
+// De noche, cielo despejado = luna (is_day ausente en datos antiguos guardados = de día)
+function wxIcon(code, isDay) {
+  if (isDay === 0 && code <= 2) return code <= 1 ? '🌙' : '☁️';
+  return wmo(code)[0];
+}
 function fetchWx() {
   var c = S.cfg.city;
   getOpenMeteo('https://api.open-meteo.com/v1/forecast?latitude=' + c.lat + '&longitude=' + c.lon +
-    '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m' +
-    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe%2FMadrid&forecast_days=5',
+    '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m,is_day' +
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
+    '&hourly=temperature_2m,weather_code,precipitation_probability,is_day&forecast_hours=14&timezone=Europe%2FMadrid&forecast_days=5',
     function (j) { wx = {t: Date.now(), d: j, city: c.name}; S.wx = wx; save(); renderWx(); },
     function () { renderWx(true); });
 }
@@ -406,7 +428,7 @@ function renderWx(failed) {
   var el = $('wx'); if (!el) return;
   if (!wx || !wx.d || !wx.d.current) { el.innerHTML = failed ? '<span class="mute">No se ha podido cargar el tiempo. Lo reintentaré en unos minutos.</span>' : '<span class="mute">Cargando el tiempo…</span>'; return; }
   var cur = wx.d.current, dl = wx.d.daily, w = wmo(cur.weather_code), h = '';
-  h += '<h3>' + esc(wx.city) + '</h3><div class="wxnow"><span class="e">' + w[0] + '</span><div><div class="t">' + Math.round(cur.temperature_2m) + '°</div>' +
+  h += '<h3>' + esc(wx.city) + '</h3><div class="wxnow"><span class="e">' + wxIcon(cur.weather_code, cur.is_day) + '</span><div><div class="t">' + Math.round(cur.temperature_2m) + '°</div>' +
     '<div class="mute">' + w[1] + ' · sensación ' + Math.round(cur.apparent_temperature) + '° · viento ' + Math.round(cur.wind_speed_10m) + ' km/h</div></div></div><div class="wxdays">';
   for (var i = 0; i < dl.time.length; i++) {
     var p = dl.time[i].split('-'), dd = new Date(+p[0], +p[1] - 1, +p[2]), e = wmo(dl.weather_code[i]);
@@ -415,6 +437,24 @@ function renderWx(failed) {
       (dl.precipitation_probability_max[i] != null ? '<br><span class="mute small">💧 ' + dl.precipitation_probability_max[i] + '%</span>' : '') + '</div>';
   }
   el.innerHTML = h + '</div>' + (failed ? '<div class="mute small" style="margin-top:8px">Sin conexión: datos de la última actualización.</div>' : '');
+  renderHours();
+}
+function renderHours() {
+  var el = $('wxh'); if (!el) return;
+  var hr = wx && wx.d && wx.d.hourly;
+  if (!hr || !hr.time) { el.style.display = 'none'; return; }
+  // Las horas vienen en hora local ("2026-10-23T08:00"): se descartan las ya pasadas comparando el texto
+  var d = new Date(), now = ymd(d) + 'T' + pad(d.getHours()) + ':00', h = '', n = 0;
+  for (var i = 0; i < hr.time.length && n < 12; i++) {
+    if (hr.time[i] < now) continue;
+    var e = wxIcon(hr.weather_code[i], hr.is_day[i]), pp = hr.precipitation_probability[i];
+    h += '<div><b>' + (n === 0 ? 'Ahora' : hr.time[i].slice(11, 13) + 'h') + '</b><span class="e">' + e + '</span>' + Math.round(hr.temperature_2m[i]) + '°' +
+      '<br><span class="mute small">' + (pp != null ? '💧' + pp + '%' : '') + '</span></div>';
+    n++;
+  }
+  if (!n) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<h3>Próximas horas</h3><div class="wxhours">' + h + '</div>';
 }
 
 /* ---------- Radio ---------- */
@@ -463,19 +503,19 @@ function radioTiles(max) {
   var h = '', list = S.cfg.radios;
   list.forEach(function (r, i) {
     if (max && i >= max) return;
+    if (redit && !max) {
+      h += '<div class="rt ed"><button class="mv" data-a="rmv:' + i + ':-1"' + (i ? '' : ' disabled') + '>‹</button><span class="nm">' + esc(r.n) + '</span>' +
+        '<button class="mv" data-a="rmv:' + i + ':1"' + (i < list.length - 1 ? '' : ' disabled') + '>›</button><span class="rx" data-a="rdel:' + i + '">✕</span></div>';
+      return;
+    }
     var on = playing && playing.u === r.u;
-    h += '<button class="rt' + (on ? ' on' : '') + '" data-a="' + (on ? 'rstop' : 'rplay:' + i) + '">' + (on ? '■ ' : '▶ ') + esc(r.n) +
-      (redit && !max ? '<span class="rx" data-a="rdel:' + i + '">✕</span>' : '') + '</button>';
+    h += '<button class="rt' + (on ? ' on' : '') + '" data-a="' + (on ? 'rstop' : 'rplay:' + i) + '">' + (on ? '■ ' : '▶ ') + esc(r.n) + '</button>';
   });
   return h || '<p class="mute">No tienes emisoras guardadas. Búscalas abajo.</p>';
 }
 
-/* ---------- Spotify ---------- */
-function spParts(u) { var m = /open\.spotify\.com\/(?:intl-[a-z]+\/)?(playlist|album|artist|track|show|episode)\/([A-Za-z0-9]+)/.exec(u || ''); return m ? [m[1], m[2]] : null; }
-function spUri(u) { var p = spParts(u); return p ? 'spotify:' + p[0] + ':' + p[1] : u; }
-
 /* ---------- Vistas ---------- */
-var VIEWS = [['home','🏠','Inicio'],['menu','🍴','Menú'],['recetas','📖','Recetas'],['compra','🛒','Compra'],['musica','🎵','Música'],['cal','📅','Calendario'],['cfg','🔧','Ajustes']];
+var VIEWS = [['home','🏠','Inicio'],['menu','🍴','Menú'],['recetas','📖','Recetas'],['compra','🛒','Compra'],['musica','📻','Radio'],['cal','📅','Calendario'],['cfg','🔧','Ajustes']];
 function renderNav() {
   var d = new Date(), h = '<div class="nc" id="navclock">' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</div>';
   VIEWS.forEach(function (v) { h += '<button data-a="nav:' + v[0] + '" class="' + (view === v[0] ? 'on' : '') + '"><span class="i">' + v[1] + '</span>' + v[2] + '</button>'; });
@@ -485,17 +525,18 @@ function dateStr(d) { return DIAS[d.getDay()] + ', ' + d.getDate() + ' de ' + ME
 function pending() { var g = shopping(), n = 0; for (var s in g) if (s !== 'B') g[s].forEach(function (it) { if (!S.checked[it.k]) n++; }); S.extra.forEach(function (x) { if (!x.done) n++; }); return n; }
 
 function vHome() {
-  var d = new Date(), t = S.plan.days[todayIdx()], h = '<div class="row"><div class="f1">';
+  var d = new Date(), t = S.plan.days[todayIdx()], h = '<div class="row"><div class="f1 hcol">';
   h += '<div class="clock" id="clock">' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</div><div class="date" id="date">' + dateStr(d) + '</div>';
-  h += '<div class="card" id="wx"></div></div><div class="f1">';
+  h += '<div class="card" id="wx"></div><div class="card" id="wxh" style="display:none"></div></div><div class="f1 hcol">';
   h += '<div class="card"><h3>Hoy se come</h3>';
   SLOTS.forEach(function (s) {
     var r = BYID[t[s[0]]];
     h += '<div class="meal" data-a="' + (r ? 'open:' + r.id : '') + '"><span class="k">' + s[1] + '</span><span class="n">' + (r ? esc(r.n) : '<span class="mute">Sin receta compatible</span>') + '</span><span class="mute">›</span></div>';
   });
-  h += '</div><div class="card tip">💡 ' + esc(tips()[0]) + '</div><div class="row">';
-  h += '<div class="card f1" data-a="nav:compra" style="min-width:150px;cursor:pointer"><h3>Compra</h3><span class="big">' + pending() + '</span> <span class="mute">pendientes</span></div>';
-  h += '<div class="card f1" style="min-width:150px"><h3>Spotify</h3><a class="btn" href="spotify:">▶ Abrir Spotify</a></div></div>';
+  var np = pending();
+  h += '<div class="meal shop" data-a="nav:compra"><span class="k">🛒 Compra</span><span class="n">' + (np ? '<b>' + np + '</b> cosas pendientes' : 'Todo comprado') + '</span><span class="mute">›</span></div></div>';
+  if (S.cfg.gcal) h += '<div class="card"><div class="top"><h3 style="margin:0">Próximos eventos</h3><button class="btn sec sm" data-a="nav:cal">Calendario ›</button></div>' +
+    '<iframe class="hcal" src="' + esc(calSrc('AGENDA', true)) + '"></iframe></div>';
   h += '<div class="card"><div class="top"><h3 style="margin:0">Radio</h3><button class="btn sec sm" data-a="nav:musica">Todas ›</button></div>' + radioTiles(6) + '</div>';
   return h + '</div></div>';
 }
@@ -561,17 +602,11 @@ function vCompra() {
   return h + '</div>';
 }
 function vMusica() {
-  var h = '<h2>Música</h2><div class="row"><div class="f1" style="min-width:420px"><div class="card"><div class="top"><h3 style="margin:0">Radio</h3>' +
-    '<button class="btn sec sm" data-a="redit">' + (redit ? 'Listo' : 'Editar') + '</button></div><div>' + radioTiles() + '</div></div>';
-  h += '<div class="card"><h3>Buscar emisoras</h3><div class="row" style="-webkit-align-items:center;align-items:center"><input type="text" id="rsq" class="f1" placeholder="Nombre, ciudad o estilo (p. ej. jazz, Gijón)"><button class="btn" data-a="rsearch">Buscar</button></div><div id="rres" style="margin-top:8px">' + radioResults() + '</div></div></div>';
-  h += '<div class="f1"><div class="card"><h3>Spotify</h3><a class="btn" href="spotify:" style="font-size:18px;padding:14px 22px">▶ Abrir Spotify</a>' +
-    '<p class="mute small">Abre la app de Spotify si está instalada en la tablet.</p></div><div class="card"><h3>Tus listas</h3>';
-  if (!S.cfg.playlists.length) h += '<p class="mute">Añade listas en Ajustes pegando el enlace de Spotify (Compartir → Copiar enlace).</p>';
-  S.cfg.playlists.forEach(function (p, i) {
-    h += '<div class="pl"><span class="n">' + esc(p.n) + '</span><a class="btn" href="' + esc(spUri(p.u)) + '">▶ Reproducir</a>' +
-      (spParts(p.u) ? '<button class="btn sec" data-a="prev:' + i + '">Ver canciones</button>' : '') + '</div>';
-  });
-  return h + '<div id="prev" style="margin-top:12px"></div></div></div></div>';
+  var h = '<h2>Radio</h2><div class="card"><div class="top"><h3 style="margin:0">Tus emisoras</h3>' +
+    '<button class="btn ' + (redit ? '' : 'sec ') + 'sm" data-a="redit">' + (redit ? '✓ Listo' : 'Ordenar / quitar') + '</button></div>' +
+    (redit ? '<p class="mute small" style="margin-top:0">Usa ‹ › para moverlas. Las 6 primeras salen en Inicio.</p>' : '') + '<div>' + radioTiles() + '</div></div>';
+  h += '<div class="card"><h3>Buscar emisoras</h3><div class="row" style="-webkit-align-items:center;align-items:center"><input type="text" id="rsq" class="f1" placeholder="Nombre, ciudad o estilo (p. ej. jazz, Gijón)"><button class="btn" data-a="rsearch">Buscar</button></div><div id="rres" style="margin-top:8px">' + radioResults() + '</div></div>';
+  return h;
 }
 function radioResults() {
   if (rres === null) return '<p class="mute">Buscando…</p>';
@@ -586,10 +621,13 @@ function radioResults() {
 }
 function vCal() {
   if (!S.cfg.gcal) return '<h2>Calendario</h2><div class="card"><p>Para ver tu Google Calendar aquí:</p><ol><li>Ve a <b>Ajustes</b> y escribe tu dirección de Gmail.</li><li>En el navegador de la tablet, inicia sesión en Google con esa cuenta (entra una vez en calendar.google.com).</li></ol><button class="btn" data-a="nav:cfg">Ir a Ajustes</button></div>';
-  var src = 'https://calendar.google.com/calendar/embed?src=' + encodeURIComponent(S.cfg.gcal) + '&ctz=Europe%2FMadrid&mode=AGENDA&showTitle=0&showPrint=0&showCalendars=0&showTz=0&hl=es';
-  return '<div class="top"><h2 style="margin:0">Calendario</h2><span><button class="btn sec" data-a="calmode:AGENDA">Agenda</button> <button class="btn sec" data-a="calmode:WEEK">Semana</button> <button class="btn sec" data-a="calmode:MONTH">Mes</button></span></div>' +
-    '<iframe id="calf" src="' + esc(src) + '" style="height:calc(100vh - 120px);min-height:400px"></iframe>' +
+  return '<iframe src="' + esc(calSrc('MONTH')) + '" style="height:calc(100vh - 60px);min-height:400px"></iframe>' +
     '<p class="mute small">Si sale vacío o pide permisos, inicia sesión en Google desde el navegador de la tablet.</p>';
+}
+// compact: agenda sin cabecera ni pestañas, para la tarjeta de Inicio
+function calSrc(mode, compact) {
+  return 'https://calendar.google.com/calendar/embed?src=' + encodeURIComponent(S.cfg.gcal) + '&ctz=Europe%2FMadrid&mode=' + mode +
+    '&showTitle=0&showPrint=0&showCalendars=0&showTz=0&hl=es' + (compact ? '&showNav=0&showDate=0&showTabs=0' : '');
 }
 function vCfg() {
   var c = S.cfg, h = '<h2>Ajustes</h2><div class="row"><div class="f1"><div class="card"><h3>Dieta</h3>';
@@ -601,13 +639,13 @@ function vCfg() {
   TAGS.forEach(function (t) { h += '<label class="chk"><input type="checkbox" class="cx" value="' + t[0] + '"' + (has(c.excl, t[0]) ? ' checked' : '') + '>' + t[1] + '</label>'; });
   h += '</div></div><div class="f1"><div class="card"><h3>Tiempo</h3><label class="l">Ciudad: <b>' + esc(c.city.name) + '</b></label><div class="row"><input type="text" id="cc" class="f1" placeholder="Buscar otra ciudad"><button class="btn sec" data-a="city">Buscar</button></div></div>';
   h += '<div class="card"><h3>Calendario</h3><label class="l">Tu Gmail (Google Calendar)</label><input type="email" id="cg" placeholder="nombre@gmail.com" value="' + esc(c.gcal) + '"></div>';
-  h += '<div class="card"><h3>Spotify</h3><label class="l">Listas (una por línea: Nombre | enlace)</label><textarea id="cl">' + esc(c.playlists.map(function (p) { return p.n + ' | ' + p.u; }).join('\n')) + '</textarea><div class="mute small">En Spotify: lista → ··· → Compartir → Copiar enlace.</div></div>';
   h += '<div class="card"><h3>Pantalla</h3><label class="l">Tema</label><select id="ct">';
   [['auto','Automático (oscuro de 21:00 a 8:00)'],['light','Siempre claro'],['dark','Siempre oscuro']].forEach(function (o) { h += '<option value="' + o[0] + '"' + (c.theme === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
   h += '</select><label class="l">Mantener la pantalla encendida</label><select id="cw">';
   [['always','Siempre'],['radio','Solo mientras suena la radio'],['never','No (se apaga como siempre)']].forEach(function (o) { h += '<option value="' + o[0] + '"' + (c.wake === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
   h += '</select>' + (navigator.wakeLock ? '' : '<div class="mute small">Este navegador no permite mantener la pantalla encendida; usa Firefox.</div>') +
-    '<div style="margin-top:12px"><button class="btn sec" data-a="fs">Pantalla completa</button></div></div></div></div>';
+    '<label class="chk" style="margin-top:14px"><input type="checkbox" id="cfs"' + (c.autofs ? ' checked' : '') + '>Volver a pantalla completa al tocar el panel</label>' +
+    '<div style="margin-top:6px"><button class="btn sec" data-a="fs">Pantalla completa</button></div></div></div></div>';
   return h + '<button class="btn" data-a="savecfg" style="font-size:18px;padding:14px 28px">Guardar ajustes</button>';
 }
 
@@ -637,9 +675,16 @@ function openRecipe(id, di, slot) {
 function closeModal() { $('ov').className = ''; }
 
 /* ---------- Eventos ---------- */
+function isFull() { return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement); }
+function goFull() {
+  var de = document.documentElement, rq = de.requestFullscreen || de.webkitRequestFullscreen || de.mozRequestFullScreen;
+  if (rq) { try { var pr = rq.call(de); if (pr && pr.catch) pr.catch(function () {}); } catch (err) {} }
+}
 document.addEventListener('click', function (e) {
   var t = e.target;
   updateWake();
+  // El navegador solo deja entrar en pantalla completa tras un toque: se aprovecha cualquiera
+  if (S.cfg.autofs && !isFull()) goFull();
   if (t.id === 'ov') { closeModal(); return; }
   while (t && t.nodeType === 1 && !t.getAttribute('data-a')) t = t.parentNode;
   if (!t || t.nodeType !== 1) return;
@@ -659,14 +704,15 @@ document.addEventListener('click', function (e) {
   else if (cmd === 'xchk') { S.extra[+p[1]].done = !S.extra[+p[1]].done; save(); render(); }
   else if (cmd === 'xdel') { S.extra.splice(+p[1], 1); save(); render(); }
   else if (cmd === 'xclear') { S.extra = S.extra.filter(function (x) { return !x.done; }); save(); render(); toast('Quitados los añadidos marcados'); }
-  else if (cmd === 'prev') {
-    var sp = spParts(S.cfg.playlists[+p[1]].u);
-    $('prev').innerHTML = '<iframe src="https://open.spotify.com/embed/' + sp[0] + '/' + sp[1] + '" style="height:380px" allow="encrypted-media"></iframe><p class="mute small">Vista previa. Para escuchar canciones completas usa «Reproducir», que abre la app.</p>';
-  }
   else if (cmd === 'rplay') play(S.cfg.radios[+p[1]]);
   else if (cmd === 'rsplay') play(rres[+p[1]]);
   else if (cmd === 'rstop') stopRadio();
   else if (cmd === 'redit') { redit = !redit; render(); }
+  else if (cmd === 'rmv') {
+    var ri = +p[1], rj = ri + (+p[2]), rl = S.cfg.radios;
+    if (rj < 0 || rj >= rl.length) return;
+    var tmp = rl[ri]; rl[ri] = rl[rj]; rl[rj] = tmp; save(); render();
+  }
   else if (cmd === 'rdel') { S.cfg.radios.splice(+p[1], 1); save(); render(); }
   else if (cmd === 'rfav') { var nr = rres[+p[1]]; S.cfg.radios.push({n: nr.n, u: nr.u, id: nr.id}); save(); render(); toast(nr.n + ' guardada'); }
   else if (cmd === 'rsearch') {
@@ -691,7 +737,6 @@ document.addEventListener('click', function (e) {
       else rbGet('/json/stations/search?tag=' + qs + '&order=clickcount&reverse=true&limit=60&hidebroken=true', done, function () { done([]); });
     }, function () { rres = []; var el = $('rres'); if (el) el.innerHTML = '<p class="mute">Sin conexión con el buscador de emisoras.</p>'; });
   }
-  else if (cmd === 'calmode') { var fr = $('calf'); if (fr) fr.src = fr.src.replace(/mode=[A-Z]+/, 'mode=' + p[1]); }
   else if (cmd === 'city') {
     var q = $('cc').value.replace(/^\s+|\s+$/g, ''); if (!q) return;
     getOpenMeteo('https://geocoding-api.open-meteo.com/v1/search?count=1&language=es&name=' + encodeURIComponent(q), function (j) {
@@ -699,10 +744,7 @@ document.addEventListener('click', function (e) {
       var r = j.results[0]; S.cfg.city = {name: r.name, lat: r.latitude, lon: r.longitude}; wx = null; S.wx = null; save(); fetchWx(); render(); toast('Ciudad: ' + r.name);
     }, function () { toast('Sin conexión'); });
   }
-  else if (cmd === 'fs') {
-    var de = document.documentElement, rq = de.requestFullscreen || de.webkitRequestFullscreen || de.mozRequestFullScreen;
-    if (rq) rq.call(de);
-  }
+  else if (cmd === 'fs') goFull();
   else if (cmd === 'savecfg') {
     var c = S.cfg;
     c.people = Math.max(1, Math.min(10, parseInt($('cp').value, 10) || 2));
@@ -714,12 +756,8 @@ document.addEventListener('click', function (e) {
     c.gcal = $('cg').value.replace(/\s/g, '');
     c.theme = $('ct').value;
     c.wake = $('cw').value;
-    c.playlists = [];
-    $('cl').value.split('\n').forEach(function (line) {
-      var bits = line.split('|'); if (bits.length < 2) return;
-      var n = bits[0].replace(/^\s+|\s+$/g, ''), u = bits.slice(1).join('|').replace(/^\s+|\s+$/g, '');
-      if (n && u) c.playlists.push({n: n, u: u});
-    });
+    c.autofs = $('cfs').checked;
+    delete c.playlists;
     save(); render(); updateWake(); toast('Ajustes guardados');
   }
 });
@@ -787,6 +825,7 @@ load();
 render();
 fetchWx();
 updateWake();
+if (navigator.serviceWorker && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
 </script>
 </body>
