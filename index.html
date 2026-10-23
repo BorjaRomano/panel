@@ -221,7 +221,7 @@ var RADIOS = [
  {n:'Radio Marca',u:'https://playerservices.streamtheworld.com/api/livestream-redirect/RADIOMARCA_NACIONAL_SC',id:'07dbb40c-f3a8-4f45-925d-c16ef08c7293'}
 ];
 var DEF = {city:{name:'Oviedo',lat:43.3614,lon:-5.8494},people:2,kcal:2000,diet:'omni',excl:[],gcal:'',theme:'auto',
-  playlists:[{n:'Today\'s Top Hits',u:'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'}],radios:RADIOS};
+  playlists:[{n:'Today\'s Top Hits',u:'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'}],radios:RADIOS,wake:'always'};
 var S, view = 'home', recFilter = 'all', recQuery = '', wx = null;
 var playing = null, rres = [], redit = false;
 
@@ -604,7 +604,10 @@ function vCfg() {
   h += '<div class="card"><h3>Spotify</h3><label class="l">Listas (una por línea: Nombre | enlace)</label><textarea id="cl">' + esc(c.playlists.map(function (p) { return p.n + ' | ' + p.u; }).join('\n')) + '</textarea><div class="mute small">En Spotify: lista → ··· → Compartir → Copiar enlace.</div></div>';
   h += '<div class="card"><h3>Pantalla</h3><label class="l">Tema</label><select id="ct">';
   [['auto','Automático (oscuro de 21:00 a 8:00)'],['light','Siempre claro'],['dark','Siempre oscuro']].forEach(function (o) { h += '<option value="' + o[0] + '"' + (c.theme === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
-  h += '</select><div style="margin-top:12px"><button class="btn sec" data-a="fs">Pantalla completa</button></div></div></div></div>';
+  h += '</select><label class="l">Mantener la pantalla encendida</label><select id="cw">';
+  [['always','Siempre'],['radio','Solo mientras suena la radio'],['never','No (se apaga como siempre)']].forEach(function (o) { h += '<option value="' + o[0] + '"' + (c.wake === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
+  h += '</select>' + (navigator.wakeLock ? '' : '<div class="mute small">Este navegador no permite mantener la pantalla encendida; usa Firefox.</div>') +
+    '<div style="margin-top:12px"><button class="btn sec" data-a="fs">Pantalla completa</button></div></div></div></div>';
   return h + '<button class="btn" data-a="savecfg" style="font-size:18px;padding:14px 28px">Guardar ajustes</button>';
 }
 
@@ -636,6 +639,7 @@ function closeModal() { $('ov').className = ''; }
 /* ---------- Eventos ---------- */
 document.addEventListener('click', function (e) {
   var t = e.target;
+  updateWake();
   if (t.id === 'ov') { closeModal(); return; }
   while (t && t.nodeType === 1 && !t.getAttribute('data-a')) t = t.parentNode;
   if (!t || t.nodeType !== 1) return;
@@ -709,13 +713,14 @@ document.addEventListener('click', function (e) {
     for (var i = 0; i < xs.length; i++) if (xs[i].checked) c.excl.push(xs[i].value);
     c.gcal = $('cg').value.replace(/\s/g, '');
     c.theme = $('ct').value;
+    c.wake = $('cw').value;
     c.playlists = [];
     $('cl').value.split('\n').forEach(function (line) {
       var bits = line.split('|'); if (bits.length < 2) return;
       var n = bits[0].replace(/^\s+|\s+$/g, ''), u = bits.slice(1).join('|').replace(/^\s+|\s+$/g, '');
       if (n && u) c.playlists.push({n: n, u: u});
     });
-    save(); render(); toast('Ajustes guardados');
+    save(); render(); updateWake(); toast('Ajustes guardados');
   }
 });
 document.addEventListener('input', function (e) {
@@ -755,14 +760,33 @@ setInterval(function () {
 }, 10000);
 setInterval(fetchWx, 30 * 60 * 1000);
 
+/* ---------- Pantalla encendida (Screen Wake Lock) ----------
+   El navegador suelta el bloqueo al ocultar la página, así que se vuelve a pedir al volver, al tocar y cada minuto */
+var wl = null;
+function updateWake() {
+  if (!navigator.wakeLock) return;
+  var want = S.cfg.wake === 'always' || (S.cfg.wake === 'radio' && !!playing);
+  if (!want) { if (wl) { wl.release(); wl = null; } return; }
+  if (wl || document.visibilityState !== 'visible') return;
+  wl = 'pending';
+  navigator.wakeLock.request('screen').then(function (l) {
+    wl = l;
+    l.addEventListener('release', function () { if (wl === l) wl = null; });
+  }, function () { wl = null; });
+}
+document.addEventListener('visibilitychange', updateWake);
+setInterval(updateWake, 60000);
+
 var au = $('au');
-au.addEventListener('playing', function () { radioStatus('En directo'); });
+au.addEventListener('playing', function () { radioStatus('En directo'); updateWake(); });
+au.addEventListener('pause', updateWake);
 au.addEventListener('waiting', function () { radioStatus('Cargando…'); });
 au.addEventListener('error', function () { if (au.getAttribute('src')) radioError(); });
 
 load();
 render();
 fetchWx();
+updateWake();
 })();
 </script>
 </body>
