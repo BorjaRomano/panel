@@ -44,7 +44,7 @@ body.dark .btn{color:#0d1f16}
 .wxdays div{-webkit-flex:1;flex:1;text-align:center;font-size:14px}
 .wxdays .e{font-size:28px;display:block;margin:2px 0}
 .wxhours{display:-webkit-flex;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.wxhours div{-webkit-flex:1 0 50px;flex:1 0 50px;text-align:center;font-size:14px;padding:0 2px}
+.wxhours div{-webkit-flex:1 1 0;flex:1 1 0;min-width:0;text-align:center;font-size:14px;padding:0 1px;white-space:nowrap}
 .wxhours .e{font-size:22px;display:block;margin:4px 0}
 .meal{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .meal:last-child{border-bottom:0}
@@ -57,13 +57,16 @@ body.dark .btn{color:#0d1f16}
 .hrow .card{padding:14px 16px}
 .hrow .card h3{margin-bottom:6px}
 .hrow .meal{padding:6px 0}
-.hrow .rt{padding:10px 14px;margin-bottom:6px}
+.hrow .rt{padding:10px 12px;margin:0 6px 6px 0;min-width:0;width:calc(33.33% - 6px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hrow .clock{font-size:110px}
 .hc{-webkit-flex:1;flex:1;min-width:300px;margin:0 8px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
 .hc>.card{-webkit-flex:1;flex:1;margin-bottom:0}
 .hclock{-webkit-justify-content:center;justify-content:center}
 .hclock .date{margin-bottom:0}
 .hrow.tall .hc>.card{min-height:280px}
+/* La fila del tiempo y los eventos crece hasta llenar la pantalla disponible */
+.home{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;min-height:100%}
+.home>.hrow.tall{-webkit-flex:1 0 auto;flex:1 0 auto}
 #wx{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;-webkit-justify-content:space-between;justify-content:space-between}
 #wxh{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
 #wxh .wxhours{margin-top:auto;margin-bottom:auto}
@@ -460,8 +463,10 @@ function renderHours() {
   var wait = '<h3>Próximas horas</h3><span class="mute">Cargando la previsión…</span>';
   if (!hr || !hr.time) { el.innerHTML = wait; return; }
   // Las horas vienen en hora local ("2026-10-23T08:00"): se descartan las ya pasadas comparando el texto
+  // Tantas horas como quepan a ~46 px cada una (entre 6 y 12)
   var d = new Date(), now = ymd(d) + 'T' + pad(d.getHours()) + ':00', h = '', n = 0;
-  for (var i = 0; i < hr.time.length && n < 12; i++) {
+  var max = Math.max(6, Math.min(12, Math.floor((el.clientWidth - 32) / 46)));
+  for (var i = 0; i < hr.time.length && n < max; i++) {
     if (hr.time[i] < now) continue;
     var e = wxIcon(hr.weather_code[i], hr.is_day[i]), pp = hr.precipitation_probability[i];
     h += '<div><b>' + (n === 0 ? 'Ahora' : hr.time[i].slice(11, 13) + 'h') + '</b><span class="e">' + e + '</span>' + Math.round(hr.temperature_2m[i]) + '°' +
@@ -541,7 +546,7 @@ function pending() { var g = shopping(), n = 0; for (var s in g) if (s !== 'B') 
 
 function vHome() {
   // Tres filas de parejas (reloj | comidas, tiempo | eventos, horas | radio): cada pareja comparte altura
-  var d = new Date(), t = S.plan.days[todayIdx()], np = pending(), h = '<div class="hrow"><div class="hc hclock">';
+  var d = new Date(), t = S.plan.days[todayIdx()], np = pending(), h = '<div class="home"><div class="hrow"><div class="hc hclock">';
   h += '<div class="clock" id="clock">' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</div><div class="date" id="date">' + dateStr(d) + '</div></div>';
   h += '<div class="hc"><div class="card"><h3>Hoy se come</h3>';
   SLOTS.forEach(function (s) {
@@ -557,7 +562,7 @@ function vHome() {
   h += '</div></div>';
 
   h += '<div class="hrow"><div class="hc"><div class="card" id="wxh"></div></div>';
-  h += '<div class="hc"><div class="card"><div class="top"><h3 style="margin:0">Radio</h3><button class="btn sec sm" data-a="nav:musica">Todas ›</button></div>' + radioTiles(6) + '</div></div></div>';
+  h += '<div class="hc"><div class="card"><div class="top"><h3 style="margin:0">Radio</h3><button class="btn sec sm" data-a="nav:musica">Todas ›</button></div>' + radioTiles(6) + '</div></div></div></div>';
   return h;
 }
 function vMenu() {
