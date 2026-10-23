@@ -51,12 +51,26 @@ body.dark .btn{color:#0d1f16}
 .meal .k{width:96px;color:var(--mute);font-size:14px}
 .meal .n{-webkit-flex:1;flex:1;font-size:18px}
 .tip{background:var(--acc2);border-color:transparent}
-/* Columnas de Inicio: la última tarjeta de cada una se estira para que ambas acaben a la misma altura */
-.hcol{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
-.hcol>.card:last-child{-webkit-flex-grow:1;flex-grow:1}
+/* Inicio: filas de dos celdas; la tarjeta de cada celda ocupa toda la altura de la fila */
+.hrow{display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap;margin:0 -8px 12px}
+.hrow:last-child{margin-bottom:0}
+.hrow .card{padding:14px 16px}
+.hrow .card h3{margin-bottom:6px}
+.hrow .meal{padding:6px 0}
+.hrow .rt{padding:10px 14px;margin-bottom:6px}
+.hrow .clock{font-size:110px}
+.hc{-webkit-flex:1;flex:1;min-width:300px;margin:0 8px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
+.hc>.card{-webkit-flex:1;flex:1;margin-bottom:0}
+.hclock{-webkit-justify-content:center;justify-content:center}
+.hclock .date{margin-bottom:0}
+.hrow.tall .hc>.card{min-height:280px}
+#wx{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;-webkit-justify-content:space-between;justify-content:space-between}
+#wxh{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
+#wxh .wxhours{margin-top:auto;margin-bottom:auto}
+.hcalc{display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
+iframe.hcal{-webkit-flex:1;flex:1;min-height:150px;display:block}
 .meal.shop{border-bottom:0}
 .meal.shop .k{color:var(--acc);font-weight:600}
-iframe.hcal{height:118px;display:block}
 .big{font-size:34px;font-weight:700}
 /* menú */
 table.wk{width:100%;border-collapse:separate;border-spacing:0 6px}
@@ -427,7 +441,7 @@ function fetchWx() {
 }
 function renderWx(failed) {
   var el = $('wx'); if (!el) return;
-  if (!wx || !wx.d || !wx.d.current) { el.innerHTML = failed ? '<span class="mute">No se ha podido cargar el tiempo. Lo reintentaré en unos minutos.</span>' : '<span class="mute">Cargando el tiempo…</span>'; return; }
+  if (!wx || !wx.d || !wx.d.current) { el.innerHTML = failed ? '<span class="mute">No se ha podido cargar el tiempo. Lo reintentaré en unos minutos.</span>' : '<span class="mute">Cargando el tiempo…</span>'; renderHours(); return; }
   var cur = wx.d.current, dl = wx.d.daily, w = wmo(cur.weather_code), h = '';
   h += '<h3>' + esc(wx.city) + '</h3><div class="wxnow"><span class="e">' + wxIcon(cur.weather_code, cur.is_day) + '</span><div><div class="t">' + Math.round(cur.temperature_2m) + '°</div>' +
     '<div class="mute">' + w[1] + ' · sensación ' + Math.round(cur.apparent_temperature) + '° · viento ' + Math.round(cur.wind_speed_10m) + ' km/h</div></div></div><div class="wxdays">';
@@ -443,7 +457,8 @@ function renderWx(failed) {
 function renderHours() {
   var el = $('wxh'); if (!el) return;
   var hr = wx && wx.d && wx.d.hourly;
-  if (!hr || !hr.time) { el.style.display = 'none'; return; }
+  var wait = '<h3>Próximas horas</h3><span class="mute">Cargando la previsión…</span>';
+  if (!hr || !hr.time) { el.innerHTML = wait; return; }
   // Las horas vienen en hora local ("2026-10-23T08:00"): se descartan las ya pasadas comparando el texto
   var d = new Date(), now = ymd(d) + 'T' + pad(d.getHours()) + ':00', h = '', n = 0;
   for (var i = 0; i < hr.time.length && n < 12; i++) {
@@ -453,8 +468,7 @@ function renderHours() {
       '<br><span class="mute small">' + (pp != null ? '💧' + pp + '%' : '') + '</span></div>';
     n++;
   }
-  if (!n) { el.style.display = 'none'; return; }
-  el.style.display = 'block';
+  if (!n) { el.innerHTML = wait; return; }
   el.innerHTML = '<h3>Próximas horas</h3><div class="wxhours">' + h + '</div>';
 }
 
@@ -526,20 +540,25 @@ function dateStr(d) { return DIAS[d.getDay()] + ', ' + d.getDate() + ' de ' + ME
 function pending() { var g = shopping(), n = 0; for (var s in g) if (s !== 'B') g[s].forEach(function (it) { if (!S.checked[it.k]) n++; }); S.extra.forEach(function (x) { if (!x.done) n++; }); return n; }
 
 function vHome() {
-  var d = new Date(), t = S.plan.days[todayIdx()], h = '<div class="row"><div class="f1 hcol">';
-  h += '<div class="clock" id="clock">' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</div><div class="date" id="date">' + dateStr(d) + '</div>';
-  h += '<div class="card" id="wx"></div><div class="card" id="wxh" style="display:none"></div></div><div class="f1 hcol">';
-  h += '<div class="card"><h3>Hoy se come</h3>';
+  // Tres filas de parejas (reloj | comidas, tiempo | eventos, horas | radio): cada pareja comparte altura
+  var d = new Date(), t = S.plan.days[todayIdx()], np = pending(), h = '<div class="hrow"><div class="hc hclock">';
+  h += '<div class="clock" id="clock">' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</div><div class="date" id="date">' + dateStr(d) + '</div></div>';
+  h += '<div class="hc"><div class="card"><h3>Hoy se come</h3>';
   SLOTS.forEach(function (s) {
     var r = BYID[t[s[0]]];
     h += '<div class="meal" data-a="' + (r ? 'open:' + r.id : '') + '"><span class="k">' + s[1] + '</span><span class="n">' + (r ? esc(r.n) : '<span class="mute">Sin receta compatible</span>') + '</span><span class="mute">›</span></div>';
   });
-  var np = pending();
-  h += '<div class="meal shop" data-a="nav:compra"><span class="k">📝 Compra</span><span class="n">' + (np ? '<b>' + np + '</b> cosas pendientes' : 'Todo comprado') + '</span><span class="mute">›</span></div></div>';
-  if (S.cfg.gcal) h += '<div class="card"><div class="top"><h3 style="margin:0">Próximos eventos</h3><button class="btn sec sm" data-a="nav:cal">Calendario ›</button></div>' +
+  h += '<div class="meal shop" data-a="nav:compra"><span class="k">📝 Compra</span><span class="n">' + (np ? '<b>' + np + '</b> cosas pendientes' : 'Todo comprado') + '</span><span class="mute">›</span></div></div></div></div>';
+
+  h += '<div class="hrow tall"><div class="hc"><div class="card" id="wx"></div></div><div class="hc">';
+  if (S.cfg.gcal) h += '<div class="card hcalc"><div class="top"><h3 style="margin:0">Próximos eventos</h3><button class="btn sec sm" data-a="nav:cal">Calendario ›</button></div>' +
     '<iframe class="hcal" src="' + esc(calSrc('AGENDA', true)) + '"></iframe></div>';
-  h += '<div class="card"><div class="top"><h3 style="margin:0">Radio</h3><button class="btn sec sm" data-a="nav:musica">Todas ›</button></div>' + radioTiles(6) + '</div>';
-  return h + '</div></div>';
+  else h += '<div class="card tip"><h3>Consejo</h3>💡 ' + esc(tips()[0]) + '</div>';
+  h += '</div></div>';
+
+  h += '<div class="hrow"><div class="hc"><div class="card" id="wxh"></div></div>';
+  h += '<div class="hc"><div class="card"><div class="top"><h3 style="margin:0">Radio</h3><button class="btn sec sm" data-a="nav:musica">Todas ›</button></div>' + radioTiles(6) + '</div></div></div>';
+  return h;
 }
 function vMenu() {
   var mon = new Date(S.plan.week.replace(/-/g, '/')), c = countTags(S.plan.days), f = factor(), ti = todayIdx();
@@ -622,8 +641,7 @@ function radioResults() {
 }
 function vCal() {
   if (!S.cfg.gcal) return '<h2>Calendario</h2><div class="card"><p>Para ver tu Google Calendar aquí:</p><ol><li>Ve a <b>Ajustes</b> y escribe tu dirección de Gmail.</li><li>En el navegador de la tablet, inicia sesión en Google con esa cuenta (entra una vez en calendar.google.com).</li></ol><button class="btn" data-a="nav:cfg">Ir a Ajustes</button></div>';
-  return '<iframe src="' + esc(calSrc('MONTH')) + '" style="height:calc(100vh - 60px);min-height:400px"></iframe>' +
-    '<p class="mute small">Si sale vacío o pide permisos, inicia sesión en Google desde el navegador de la tablet.</p>';
+  return '<iframe src="' + esc(calSrc('MONTH')) + '" style="height:calc(100vh - 40px);min-height:400px"></iframe>';
 }
 // compact: agenda sin cabecera ni pestañas, para la tarjeta de Inicio
 function calSrc(mode, compact) {
