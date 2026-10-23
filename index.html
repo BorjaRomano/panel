@@ -516,7 +516,7 @@ function radioTiles(max) {
 }
 
 /* ---------- Vistas ---------- */
-var VIEWS = [['home','🏠','Inicio'],['menu','🍴','Menú'],['recetas','📖','Recetas'],['compra','🛒','Compra'],['musica','📻','Radio'],['cal','📅','Calendario'],['cfg','🔧','Ajustes']];
+var VIEWS = [['home','🏠','Inicio'],['menu','🍴','Menú'],['recetas','📖','Recetas'],['compra','📝','Compra'],['musica','📻','Radio'],['cal','📅','Calendario'],['cfg','🔧','Ajustes']];
 function renderNav() {
   var d = new Date(), h = '<div class="nc" id="navclock">' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + '</div>';
   VIEWS.forEach(function (v) { h += '<button data-a="nav:' + v[0] + '" class="' + (view === v[0] ? 'on' : '') + '"><span class="i">' + v[1] + '</span>' + v[2] + '</button>'; });
@@ -535,7 +535,7 @@ function vHome() {
     h += '<div class="meal" data-a="' + (r ? 'open:' + r.id : '') + '"><span class="k">' + s[1] + '</span><span class="n">' + (r ? esc(r.n) : '<span class="mute">Sin receta compatible</span>') + '</span><span class="mute">›</span></div>';
   });
   var np = pending();
-  h += '<div class="meal shop" data-a="nav:compra"><span class="k">🛒 Compra</span><span class="n">' + (np ? '<b>' + np + '</b> cosas pendientes' : 'Todo comprado') + '</span><span class="mute">›</span></div></div>';
+  h += '<div class="meal shop" data-a="nav:compra"><span class="k">📝 Compra</span><span class="n">' + (np ? '<b>' + np + '</b> cosas pendientes' : 'Todo comprado') + '</span><span class="mute">›</span></div></div>';
   if (S.cfg.gcal) h += '<div class="card"><div class="top"><h3 style="margin:0">Próximos eventos</h3><button class="btn sec sm" data-a="nav:cal">Calendario ›</button></div>' +
     '<iframe class="hcal" src="' + esc(calSrc('AGENDA', true)) + '"></iframe></div>';
   h += '<div class="card"><div class="top"><h3 style="margin:0">Radio</h3><button class="btn sec sm" data-a="nav:musica">Todas ›</button></div>' + radioTiles(6) + '</div>';
