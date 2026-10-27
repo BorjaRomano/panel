@@ -486,7 +486,8 @@ function rbGet(path, ok, fail, i) {
 function radioStatus(txt) { var el = $('pls'); if (el) el.textContent = txt; }
 function play(st) {
   var a = $('au');
-  playing = {n: st.n, u: st.u, id: st.id, retried: false};
+  clearTimeout(reconT); reconT = null;
+  playing = {n: st.n, u: st.u, id: st.id, retried: false, fails: 0, lastT: -1, stuck: 0, okTicks: 0};
   a.src = st.u;
   var p = a.play(); if (p && p.catch) p.catch(function () {});
   renderPlayer(); radioStatus('Conectando…');
@@ -494,24 +495,52 @@ function play(st) {
 }
 function stopRadio() {
   var a = $('au');
+  clearTimeout(reconT); reconT = null;
+  playing = null;
   a.pause(); a.removeAttribute('src'); try { a.load(); } catch (e) {}
-  playing = null; renderPlayer();
+  renderPlayer();
   if (view === 'musica' || view === 'home') render();
+}
+// Las emisiones en directo se cortan de vez en cuando (el servidor cierra la conexión, microcortes de wifi).
+// Se reconecta con esperas crecientes (2, 4, 8… hasta 30 s) y solo se rinde tras 8 intentos seguidos fallidos.
+var reconT = null;
+function startStream(st) { var a = $('au'); a.src = st.u; var p = a.play(); if (p && p.catch) p.catch(function () {}); }
+function reconnect() {
+  var st = playing; if (!st || reconT) return;
+  st.fails++;
+  if (st.fails > 8) { radioFail(st); return; }
+  radioStatus('Reconectando…');
+  reconT = setTimeout(function () { reconT = null; if (playing === st) startStream(st); }, Math.min(30000, 1000 * Math.pow(2, st.fails)));
 }
 function radioError() {
   if (!playing) return;
   var st = playing;
-  // Si la emisora está en radio-browser, pide su URL actual y reintenta una vez
+  // Si la emisora está en radio-browser, primero pide su URL actual por si ha cambiado
   if (st.id && !st.retried) {
     st.retried = true; radioStatus('Buscando otra señal…');
     rbGet('/json/stations/byuuid/' + st.id, function (j) {
-      if (!j.length || !j[0].url_resolved || j[0].url_resolved === st.u) { radioFail(st); return; }
-      st.u = j[0].url_resolved;
-      S.cfg.radios.forEach(function (r) { if (r.id === st.id) r.u = st.u; }); save();
-      $('au').src = st.u; var p = $('au').play(); if (p && p.catch) p.catch(function () {});
-    }, function () { radioFail(st); });
-  } else radioFail(st);
+      if (playing !== st) return;
+      if (j.length && j[0].url_resolved && j[0].url_resolved !== st.u) {
+        st.u = j[0].url_resolved;
+        S.cfg.radios.forEach(function (r) { if (r.id === st.id) r.u = st.u; }); save();
+        startStream(st);
+      } else reconnect();
+    }, function () { if (playing === st) reconnect(); });
+  } else reconnect();
 }
+// Vigilante: si el audio no avanza en 30 s estando en marcha, la emisión se ha colgado sin avisar
+setInterval(function () {
+  var st = playing, a = $('au');
+  if (!st || reconT || a.paused) return;
+  if (a.currentTime === st.lastT) {
+    st.stuck += 10; st.okTicks = 0;
+    if (st.stuck >= 30) { st.stuck = 0; reconnect(); }
+  } else {
+    st.lastT = a.currentTime; st.stuck = 0;
+    // Tras un minuto sonando bien, se olvidan los fallos anteriores
+    if (++st.okTicks >= 6) { st.fails = 0; st.retried = false; }
+  }
+}, 10000);
 function radioFail(st) { toast('No se puede reproducir ' + st.n + ' ahora mismo'); stopRadio(); }
 function renderPlayer() {
   var el = $('player');
@@ -847,6 +876,8 @@ au.addEventListener('playing', function () { radioStatus('En directo'); updateWa
 au.addEventListener('pause', updateWake);
 au.addEventListener('waiting', function () { radioStatus('Cargando…'); });
 au.addEventListener('error', function () { if (au.getAttribute('src')) radioError(); });
+// Una emisión en directo no debería "terminar": si lo hace, es un corte
+au.addEventListener('ended', function () { if (playing) reconnect(); });
 
 load();
 render();
